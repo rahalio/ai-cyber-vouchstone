@@ -1,0 +1,572 @@
+import { makeApi, Zodios, type ZodiosOptions } from '@zodios/core';
+import { z } from 'zod';
+
+const submitEvidenceItem_Body = z
+  .object({
+    typeKey: z.string(),
+    domains: z.array(
+      z.enum([
+        'risk_exposure',
+        'governance_and_leadership',
+        'strategic_context',
+        'resilience',
+        'response_capability',
+        'extended_ecosystem',
+        'efficient_investment',
+      ])
+    ),
+    assetIds: z.array(z.string()).optional(),
+    effectiveDate: z.string(),
+    provenance: z.enum([
+      'internal',
+      'independent_provider',
+      'regulator',
+      'supplier',
+      'auditor',
+    ]),
+    providerName: z.string().optional(),
+    artefactReference: z.string().optional(),
+  })
+  .passthrough();
+const DomainKey = z.enum([
+  'risk_exposure',
+  'governance_and_leadership',
+  'strategic_context',
+  'resilience',
+  'response_capability',
+  'extended_ecosystem',
+  'efficient_investment',
+]);
+const EvidenceItem = z
+  .object({
+    id: z.string(),
+    typeKey: z.string(),
+    domains: z.array(
+      z.enum([
+        'risk_exposure',
+        'governance_and_leadership',
+        'strategic_context',
+        'resilience',
+        'response_capability',
+        'extended_ecosystem',
+        'efficient_investment',
+      ])
+    ),
+    assetIds: z.array(z.string()).optional(),
+    effectiveDate: z.string(),
+    expiresAt: z.string().datetime({ offset: true }).optional(),
+    validity: z.enum(['valid', 'expiring', 'expired', 'superseded']),
+    provenance: z
+      .enum([
+        'internal',
+        'independent_provider',
+        'regulator',
+        'supplier',
+        'auditor',
+      ])
+      .optional(),
+    providerName: z.string().optional(),
+    artefactReference: z.string().optional(),
+    supersededById: z.string().optional(),
+  })
+  .passthrough();
+const ResponseMeta = z
+  .object({
+    requestId: z.string().uuid(),
+    correlationId: z.string(),
+    generatedAt: z.string().datetime({ offset: true }),
+  })
+  .partial()
+  .passthrough();
+const ListEnvelopeEvidenceItem = z
+  .object({
+    data: z
+      .object({
+        items: z.array(
+          z
+            .object({
+              id: z.string(),
+              typeKey: z.string(),
+              domains: z.array(
+                z.enum([
+                  'risk_exposure',
+                  'governance_and_leadership',
+                  'strategic_context',
+                  'resilience',
+                  'response_capability',
+                  'extended_ecosystem',
+                  'efficient_investment',
+                ])
+              ),
+              assetIds: z.array(z.string()).optional(),
+              effectiveDate: z.string(),
+              expiresAt: z.string().datetime({ offset: true }).optional(),
+              validity: z.enum(['valid', 'expiring', 'expired', 'superseded']),
+              provenance: z
+                .enum([
+                  'internal',
+                  'independent_provider',
+                  'regulator',
+                  'supplier',
+                  'auditor',
+                ])
+                .optional(),
+              providerName: z.string().optional(),
+              artefactReference: z.string().optional(),
+              supersededById: z.string().optional(),
+            })
+            .passthrough()
+        ),
+        nextCursor: z.string().optional(),
+      })
+      .passthrough(),
+    meta: z
+      .object({
+        requestId: z.string().uuid(),
+        correlationId: z.string(),
+        generatedAt: z.string().datetime({ offset: true }),
+      })
+      .partial()
+      .passthrough(),
+  })
+  .passthrough();
+const Problem = z
+  .object({
+    type: z.string().url(),
+    title: z.string(),
+    status: z.number().int(),
+    detail: z.string(),
+    instance: z.string().url(),
+    code: z.string(),
+  })
+  .partial()
+  .passthrough();
+const EvidenceItemCreate = z
+  .object({
+    typeKey: z.string(),
+    domains: z.array(
+      z.enum([
+        'risk_exposure',
+        'governance_and_leadership',
+        'strategic_context',
+        'resilience',
+        'response_capability',
+        'extended_ecosystem',
+        'efficient_investment',
+      ])
+    ),
+    assetIds: z.array(z.string()).optional(),
+    effectiveDate: z.string(),
+    provenance: z.enum([
+      'internal',
+      'independent_provider',
+      'regulator',
+      'supplier',
+      'auditor',
+    ]),
+    providerName: z.string().optional(),
+    artefactReference: z.string().optional(),
+  })
+  .passthrough();
+const DataEnvelopeEvidenceItem = z
+  .object({
+    data: z
+      .object({
+        id: z.string(),
+        typeKey: z.string(),
+        domains: z.array(
+          z.enum([
+            'risk_exposure',
+            'governance_and_leadership',
+            'strategic_context',
+            'resilience',
+            'response_capability',
+            'extended_ecosystem',
+            'efficient_investment',
+          ])
+        ),
+        assetIds: z.array(z.string()).optional(),
+        effectiveDate: z.string(),
+        expiresAt: z.string().datetime({ offset: true }).optional(),
+        validity: z.enum(['valid', 'expiring', 'expired', 'superseded']),
+        provenance: z
+          .enum([
+            'internal',
+            'independent_provider',
+            'regulator',
+            'supplier',
+            'auditor',
+          ])
+          .optional(),
+        providerName: z.string().optional(),
+        artefactReference: z.string().optional(),
+        supersededById: z.string().optional(),
+      })
+      .passthrough(),
+    meta: z
+      .object({
+        requestId: z.string().uuid(),
+        correlationId: z.string(),
+        generatedAt: z.string().datetime({ offset: true }),
+      })
+      .partial()
+      .passthrough(),
+  })
+  .passthrough();
+const EvidenceExpiryForecast = z
+  .object({
+    horizonDays: z.number().int(),
+    generatedAt: z.string().datetime({ offset: true }),
+    lapses: z.array(
+      z
+        .object({
+          evidenceItemId: z.string(),
+          typeKey: z.string(),
+          expiresAt: z.string().datetime({ offset: true }),
+          affectedDomains: z.array(
+            z.enum([
+              'risk_exposure',
+              'governance_and_leadership',
+              'strategic_context',
+              'resilience',
+              'response_capability',
+              'extended_ecosystem',
+              'efficient_investment',
+            ])
+          ),
+          projectedCapAfterLapse: z.number().int(),
+        })
+        .partial()
+        .passthrough()
+    ),
+    projectedOverallScoreChange: z.number(),
+  })
+  .partial()
+  .passthrough();
+const DataEnvelopeEvidenceExpiryForecast = z
+  .object({
+    data: z
+      .object({
+        horizonDays: z.number().int(),
+        generatedAt: z.string().datetime({ offset: true }),
+        lapses: z.array(
+          z
+            .object({
+              evidenceItemId: z.string(),
+              typeKey: z.string(),
+              expiresAt: z.string().datetime({ offset: true }),
+              affectedDomains: z.array(
+                z.enum([
+                  'risk_exposure',
+                  'governance_and_leadership',
+                  'strategic_context',
+                  'resilience',
+                  'response_capability',
+                  'extended_ecosystem',
+                  'efficient_investment',
+                ])
+              ),
+              projectedCapAfterLapse: z.number().int(),
+            })
+            .partial()
+            .passthrough()
+        ),
+        projectedOverallScoreChange: z.number(),
+      })
+      .partial()
+      .passthrough(),
+    meta: z
+      .object({
+        requestId: z.string().uuid(),
+        correlationId: z.string(),
+        generatedAt: z.string().datetime({ offset: true }),
+      })
+      .partial()
+      .passthrough(),
+  })
+  .passthrough();
+
+export const schemas: any = {
+  submitEvidenceItem_Body,
+  DomainKey,
+  EvidenceItem,
+  ResponseMeta,
+  ListEnvelopeEvidenceItem,
+  Problem,
+  EvidenceItemCreate,
+  DataEnvelopeEvidenceItem,
+  EvidenceExpiryForecast,
+  DataEnvelopeEvidenceExpiryForecast,
+};
+
+const endpoints = makeApi([
+  {
+    method: 'get',
+    path: '/v1/evidence',
+    alias: 'listEvidenceItems',
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'cursor',
+        type: 'Query',
+        schema: z.string().optional(),
+      },
+      {
+        name: 'limit',
+        type: 'Query',
+        schema: z.number().int().gte(1).lte(200).optional().default(50),
+      },
+      {
+        name: 'domain',
+        type: 'Query',
+        schema: z
+          .enum([
+            'risk_exposure',
+            'governance_and_leadership',
+            'strategic_context',
+            'resilience',
+            'response_capability',
+            'extended_ecosystem',
+            'efficient_investment',
+          ])
+          .optional(),
+      },
+      {
+        name: 'validity',
+        type: 'Query',
+        schema: z
+          .enum(['valid', 'expiring', 'expired', 'superseded'])
+          .optional(),
+      },
+    ],
+    response: z
+      .object({
+        data: z
+          .object({
+            items: z.array(
+              z
+                .object({
+                  id: z.string(),
+                  typeKey: z.string(),
+                  domains: z.array(
+                    z.enum([
+                      'risk_exposure',
+                      'governance_and_leadership',
+                      'strategic_context',
+                      'resilience',
+                      'response_capability',
+                      'extended_ecosystem',
+                      'efficient_investment',
+                    ])
+                  ),
+                  assetIds: z.array(z.string()).optional(),
+                  effectiveDate: z.string(),
+                  expiresAt: z.string().datetime({ offset: true }).optional(),
+                  validity: z.enum([
+                    'valid',
+                    'expiring',
+                    'expired',
+                    'superseded',
+                  ]),
+                  provenance: z
+                    .enum([
+                      'internal',
+                      'independent_provider',
+                      'regulator',
+                      'supplier',
+                      'auditor',
+                    ])
+                    .optional(),
+                  providerName: z.string().optional(),
+                  artefactReference: z.string().optional(),
+                  supersededById: z.string().optional(),
+                })
+                .passthrough()
+            ),
+            nextCursor: z.string().optional(),
+          })
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough(),
+      })
+      .passthrough(),
+    errors: [
+      {
+        status: 401,
+        description: `Missing or invalid API key`,
+        schema: z
+          .object({
+            type: z.string().url(),
+            title: z.string(),
+            status: z.number().int(),
+            detail: z.string(),
+            instance: z.string().url(),
+            code: z.string(),
+          })
+          .partial()
+          .passthrough(),
+      },
+    ],
+  },
+  {
+    method: 'post',
+    path: '/v1/evidence',
+    alias: 'submitEvidenceItem',
+    description: `Submit typed evidence. The validity period is derived from the committee-owned rule for the evidence type and cannot be set by the submitter.`,
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'body',
+        type: 'Body',
+        schema: submitEvidenceItem_Body,
+      },
+    ],
+    response: z
+      .object({
+        data: z
+          .object({
+            id: z.string(),
+            typeKey: z.string(),
+            domains: z.array(
+              z.enum([
+                'risk_exposure',
+                'governance_and_leadership',
+                'strategic_context',
+                'resilience',
+                'response_capability',
+                'extended_ecosystem',
+                'efficient_investment',
+              ])
+            ),
+            assetIds: z.array(z.string()).optional(),
+            effectiveDate: z.string(),
+            expiresAt: z.string().datetime({ offset: true }).optional(),
+            validity: z.enum(['valid', 'expiring', 'expired', 'superseded']),
+            provenance: z
+              .enum([
+                'internal',
+                'independent_provider',
+                'regulator',
+                'supplier',
+                'auditor',
+              ])
+              .optional(),
+            providerName: z.string().optional(),
+            artefactReference: z.string().optional(),
+            supersededById: z.string().optional(),
+          })
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough(),
+      })
+      .passthrough(),
+    errors: [
+      {
+        status: 422,
+        description: `Semantically invalid request (e.g. PACK_EMPTY)`,
+        schema: z
+          .object({
+            type: z.string().url(),
+            title: z.string(),
+            status: z.number().int(),
+            detail: z.string(),
+            instance: z.string().url(),
+            code: z.string(),
+          })
+          .partial()
+          .passthrough(),
+      },
+    ],
+  },
+  {
+    method: 'get',
+    path: '/v1/evidence/expiry-forecast',
+    alias: 'getEvidenceExpiryForecast',
+    description: `Forward view of evidence lapsing in the requested horizon and the score impact of each lapse.`,
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'horizonDays',
+        type: 'Query',
+        schema: z.number().int().optional().default(180),
+      },
+    ],
+    response: z
+      .object({
+        data: z
+          .object({
+            horizonDays: z.number().int(),
+            generatedAt: z.string().datetime({ offset: true }),
+            lapses: z.array(
+              z
+                .object({
+                  evidenceItemId: z.string(),
+                  typeKey: z.string(),
+                  expiresAt: z.string().datetime({ offset: true }),
+                  affectedDomains: z.array(
+                    z.enum([
+                      'risk_exposure',
+                      'governance_and_leadership',
+                      'strategic_context',
+                      'resilience',
+                      'response_capability',
+                      'extended_ecosystem',
+                      'efficient_investment',
+                    ])
+                  ),
+                  projectedCapAfterLapse: z.number().int(),
+                })
+                .partial()
+                .passthrough()
+            ),
+            projectedOverallScoreChange: z.number(),
+          })
+          .partial()
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough(),
+      })
+      .passthrough(),
+    errors: [
+      {
+        status: 401,
+        description: `Missing or invalid API key`,
+        schema: z
+          .object({
+            type: z.string().url(),
+            title: z.string(),
+            status: z.number().int(),
+            detail: z.string(),
+            instance: z.string().url(),
+            code: z.string(),
+          })
+          .partial()
+          .passthrough(),
+      },
+    ],
+  },
+]);
+
+export const api: any = new Zodios('https://api.vouchstone.local/v1', endpoints);
+
+export function createApiClient(baseUrl: string, options?: ZodiosOptions): any {
+  return new Zodios(baseUrl, endpoints, options);
+}

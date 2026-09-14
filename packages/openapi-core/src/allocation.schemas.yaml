@@ -1,0 +1,129 @@
+openapi: 3.1.0
+info:
+  title: Allocation API schemas
+  version: 0.1.0
+  description: Believed impact versus actual control investment reconciliation.
+paths: {}
+components:
+  schemas:
+    ControlInvestment:
+      type: object
+      required:
+      - domain
+      - amount
+      - period
+      properties:
+        domain:
+          $ref: ./common/vouchstone-primitives.yaml#/components/schemas/DomainKey
+        threatClass:
+          type: string
+          enum:
+          - insider
+          - external_targeted
+          - external_opportunistic
+          - supply_chain
+        amount:
+          $ref: ./common/vouchstone-primitives.yaml#/components/schemas/Money
+        effortFullTimeEquivalents:
+          type: number
+          format: float
+        period:
+          type: string
+        sourceSystem:
+          type: string
+    ImpactBelief:
+      type: object
+      required:
+      - threatClass
+      - believedImpactRank
+      - capturedFrom
+      properties:
+        threatClass:
+          type: string
+          enum:
+          - insider
+          - external_targeted
+          - external_opportunistic
+          - supply_chain
+        believedImpactRank:
+          type: integer
+          minimum: 1
+        believedShare:
+          type: number
+          format: float
+        capturedFrom:
+          type: string
+          enum:
+          - executive_survey
+          - risk_register
+          - committee_minute
+          - workshop
+        capturedAt:
+          type: string
+          format: date-time
+        trustInInternalControls:
+          type: number
+          format: float
+          description: Stated confidence that internal controls would detect this threat class
+      x-dynamodb:
+        entityType: IMPACT
+        pkPatternTemplate: IMPACT#${threatClass}
+        skPatternTemplate: METADATA
+        pkPattern: entity
+        createdAtField: capturedAt
+        updatedAtField: capturedAt
+    AllocationDivergence:
+      type: object
+      properties:
+        threatClass:
+          type: string
+        believedImpactShare:
+          type: number
+          format: float
+        actualInvestmentShare:
+          type: number
+          format: float
+        divergencePoints:
+          type: number
+          format: float
+        findingId:
+          type: string
+    AllocationReconciliation:
+      type: object
+      properties:
+        period:
+          type: string
+        beliefs:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImpactBelief"
+        investments:
+          type: array
+          items:
+            $ref: "#/components/schemas/ControlInvestment"
+        divergences:
+          type: array
+          items:
+            $ref: "#/components/schemas/AllocationDivergence"
+        standingFindingRaised:
+          type: boolean
+    DataEnvelopeAllocationReconciliation:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/AllocationReconciliation"
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    DataEnvelopeImpactBelief:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/ImpactBelief"
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta

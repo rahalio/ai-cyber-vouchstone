@@ -1,0 +1,119 @@
+openapi: 3.1.0
+info:
+  title: Domains API
+  version: 0.1.0
+  description: Seven-domain posture scoring under evidence caps.
+  license:
+    name: Proprietary
+    url: https://vouchstone.local/license
+  x-domain: dom
+servers:
+- url: https://api.vouchstone.local
+  description: Local / starter API
+security:
+- bearerJWT: []
+- apiKey: []
+tags:
+- name: Domains
+  description: Seven-domain posture scoring under evidence caps
+paths:
+  /v1/domains/scores:
+    get:
+      operationId: listDomainScores
+      tags:
+      - Domains
+      description: Scores across risk exposure, governance and leadership, strategic context, resilience,
+        response capability, extended ecosystem, and efficient investment. Each score is ceilinged by
+        valid evidence and open findings.
+      security:
+      - bearerJWT: []
+      parameters:
+      - name: asOf
+        in: query
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: Domain scores with caps and suppressions
+          content:
+            application/json:
+              schema:
+                $ref: ./domains.schemas.yaml#/components/schemas/ListEnvelopeDomainScore
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+      x-repository: DomainScore
+      summary: Scores across risk exposure, governance and leadership, strategic context, resilience,
+        response c...
+  /v1/domains/{domainKey}/score:
+    parameters:
+    - $ref: '#/components/parameters/DomainKeyPath'
+    get:
+      operationId: getDomainScore
+      tags:
+      - Domains
+      security:
+      - bearerJWT: []
+      responses:
+        '200':
+          description: Domain score with contributing and lapsed evidence
+          content:
+            application/json:
+              schema:
+                $ref: ./domains.schemas.yaml#/components/schemas/DataEnvelopeDomainScore
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+      x-repository: DomainScore
+      summary: Get Domain Score
+  /v1/domains/{domainKey}/claim:
+    parameters:
+    - $ref: '#/components/parameters/DomainKeyPath'
+    post:
+      operationId: proposeDomainClaim
+      tags:
+      - Domains
+      description: Propose a posture claim for a domain. Rejected when the claim exceeds the evidence
+        cap, including when proposed by the accountable executive.
+      security:
+      - bearerJWT: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - claimedScore
+              - narrative
+              properties:
+                claimedScore:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                narrative:
+                  type: string
+      responses:
+        '201':
+          description: Claim accepted within cap
+          content:
+            application/json:
+              schema:
+                $ref: ./domains.schemas.yaml#/components/schemas/DataEnvelopeDomainScore
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+      x-repository: none
+      summary: Propose a posture claim for a domain. Rejected when the claim exceeds the evidence cap,
+        including...
+components:
+  securitySchemes:
+    bearerJWT:
+      $ref: ./common/security.yaml#/components/securitySchemes/bearerJWT
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey
+  parameters:
+    DomainKeyPath:
+      name: domainKey
+      in: path
+      required: true
+      schema:
+        $ref: ./common/vouchstone-primitives.yaml#/components/schemas/DomainKey

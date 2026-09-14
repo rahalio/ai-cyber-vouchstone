@@ -1,0 +1,11 @@
+---
+description: Never commit or push .codegen to GitHub
+alwaysApply: true
+---
+
+# `.codegen` must not be committed
+
+- **Never** add, commit, or push `.codegen/` (the zero-codegen tool tree) to GitHub.
+- `.codegen/` is listed in `.gitignore` as a safeguard; do not remove that entry.
+- After clone, obtain the tool by copying `.codegen` from `zero-apps-codegen-scaffold`, then run `pnpm codegen:paths`.
+- Generated OpenAPI bundles under `packages/openapi-core/src/.bundled/` are also gitignored — do not force-add them.

@@ -1,0 +1,78 @@
+openapi: 3.1.0
+info:
+  title: Allocation API
+  version: 0.1.0
+  description: Believed impact versus actual control investment reconciliation.
+  license:
+    name: Proprietary
+    url: https://vouchstone.local/license
+  x-domain: alc
+servers:
+- url: https://api.vouchstone.local
+  description: Local / starter API
+security:
+- bearerJWT: []
+- apiKey: []
+tags:
+- name: Allocation
+  description: Believed impact versus actual control investment reconciliation
+paths:
+  /v1/allocation/reconciliation:
+    get:
+      operationId: getAllocationReconciliation
+      tags:
+      - Allocation
+      description: Compares where the organisation believes impact concentrates against where control
+        effort and spend actually go, and raises a standing divergence finding.
+      security:
+      - bearerJWT: []
+      parameters:
+      - name: period
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Allocation reconciliation with divergences
+          content:
+            application/json:
+              schema:
+                $ref: ./allocation.schemas.yaml#/components/schemas/DataEnvelopeAllocationReconciliation
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+      x-repository: none
+      summary: Compares where the organisation believes impact concentrates against where control effort
+        and spe...
+  /v1/allocation/impact-beliefs:
+    post:
+      operationId: recordImpactBelief
+      tags:
+      - Allocation
+      description: Captures the organisation's stated belief about which threat classes carry the greatest
+        impact, for reconciliation against actual investment.
+      security:
+      - bearerJWT: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./allocation.schemas.yaml#/components/schemas/ImpactBelief
+      responses:
+        '201':
+          description: Impact belief recorded
+          content:
+            application/json:
+              schema:
+                $ref: ./allocation.schemas.yaml#/components/schemas/DataEnvelopeImpactBelief
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+      x-repository: ImpactBelief
+      summary: Captures the organisation's stated belief about which threat classes carry the greatest
+        impact, f...
+components:
+  securitySchemes:
+    bearerJWT:
+      $ref: ./common/security.yaml#/components/securitySchemes/bearerJWT
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey

@@ -1,0 +1,208 @@
+openapi: 3.1.0
+info:
+  title: Assurance API schemas
+  version: 0.1.0
+  description: Assurance statement assembly and single-sourced exports.
+paths: {}
+components:
+  schemas:
+    ThirdPartyAssessment:
+      type: object
+      properties:
+        supplierId:
+          type: string
+        supplierName:
+          type: string
+        assessedAt:
+          type: string
+          format: date-time
+        validUntil:
+          type: string
+          format: date-time
+        crisisCollaborationTested:
+          type: boolean
+        clauses:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContractualClause"
+    ContractualClause:
+      type: object
+      properties:
+        clauseType:
+          type: string
+          enum:
+          - notification_deadline
+          - audit_right
+          - subprocessor_control
+          - recovery_obligation
+          - regulatory_compliance
+        present:
+          type: boolean
+        reviewedAt:
+          type: string
+          format: date
+    StatementClaim:
+      type: object
+      required:
+      - domain
+      - score
+      properties:
+        domain:
+          $ref: ./common/vouchstone-primitives.yaml#/components/schemas/DomainKey
+        score:
+          type: integer
+        narrative:
+          type: string
+        supportingEvidenceIds:
+          type: array
+          items:
+            type: string
+        capAtPublication:
+          type: integer
+    AssuranceStatementCreate:
+      type: object
+      required:
+      - period
+      - claims
+      - signedBy
+      properties:
+        period:
+          type: string
+        claims:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatementClaim"
+        signedBy:
+          type: string
+        signatoryRole:
+          type: string
+    AssuranceStatement:
+      type: object
+      required:
+      - id
+      - period
+      - signedBy
+      - signedAt
+      properties:
+        id:
+          type: string
+        period:
+          type: string
+        signedBy:
+          type: string
+        signatoryRole:
+          type: string
+        signedAt:
+          type: string
+          format: date-time
+        claims:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatementClaim"
+        overallScore:
+          type: number
+          format: float
+        evidenceBackedShare:
+          type: number
+          format: float
+        discoveryShare:
+          $ref: ./attribution.schemas.yaml#/components/schemas/DiscoveryShareReport
+        extendedEcosystemAssessments:
+          type: array
+          items:
+            $ref: "#/components/schemas/ThirdPartyAssessment"
+        frozenEvidenceStateHash:
+          type: string
+        immutable:
+          type: boolean
+          default: true
+      x-dynamodb:
+        entityType: ASSURANCE
+        pkPatternTemplate: ASSURANCE#${id}
+        skPatternTemplate: METADATA
+        pkPattern: entity
+        createdAtField: signedAt
+    ExportPackage:
+      type: object
+      required:
+      - id
+      - statementId
+      - audience
+      - generatedAt
+      properties:
+        id:
+          type: string
+        statementId:
+          type: string
+        audience:
+          type: string
+          enum:
+          - audit_risk_committee
+          - sector_regulator
+          - cyber_insurer
+          - internal_audit
+        recipient:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+        generatedBy:
+          type: string
+        manifestHash:
+          type: string
+        claimTraceability:
+          type: array
+          items:
+            type: object
+            properties:
+              claimDomain:
+                $ref: ./common/vouchstone-primitives.yaml#/components/schemas/DomainKey
+              evidenceItemIds:
+                type: array
+                items:
+                  type: string
+      x-dynamodb:
+        entityType: EXPORT
+        pkPatternTemplate: EXPORT#${id}
+        skPatternTemplate: METADATA
+        pkPattern: entity
+        createdAtField: generatedAt
+    DataEnvelopeAssuranceStatement:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/AssuranceStatement"
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    DataEnvelopeExportPackage:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/ExportPackage"
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    ListEnvelopeAssuranceStatement:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          type: object
+          required:
+          - items
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/AssuranceStatement"
+            nextCursor:
+              type: string
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta

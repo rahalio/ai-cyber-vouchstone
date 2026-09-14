@@ -1,0 +1,97 @@
+openapi: 3.1.0
+info:
+  title: Domains API schemas
+  version: 0.1.0
+  description: Seven-domain posture scoring under evidence caps.
+paths: {}
+components:
+  schemas:
+    ScoreCap:
+      type: object
+      properties:
+        domain:
+          $ref: ./common/vouchstone-primitives.yaml#/components/schemas/DomainKey
+        cap:
+          type: integer
+          minimum: 1
+          maximum: 5
+        reason:
+          type: string
+          enum:
+          - insufficient_evidence
+          - evidence_expired
+          - open_findings
+          - attestation_stale
+          - never_exercised
+        contributingFindingIds:
+          type: array
+          items:
+            type: string
+    DomainScore:
+      type: object
+      required:
+      - domain
+      - score
+      - cap
+      properties:
+        domain:
+          $ref: ./common/vouchstone-primitives.yaml#/components/schemas/DomainKey
+        score:
+          type: integer
+          minimum: 1
+          maximum: 5
+        claimedScore:
+          type: integer
+        cap:
+          $ref: "#/components/schemas/ScoreCap"
+        evidenceBackedShare:
+          type: number
+          format: float
+        validEvidenceIds:
+          type: array
+          items:
+            type: string
+        lapsedEvidenceIds:
+          type: array
+          items:
+            type: string
+        narrative:
+          type: string
+        computedAt:
+          type: string
+          format: date-time
+      x-dynamodb:
+        entityType: DOMAIN
+        pkPatternTemplate: DOMAIN#${domain}
+        skPatternTemplate: SCORE
+        pkPattern: entity
+        updatedAtField: computedAt
+    DataEnvelopeDomainScore:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/DomainScore"
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    ListEnvelopeDomainScore:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          type: object
+          required:
+          - items
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/DomainScore"
+            nextCursor:
+              type: string
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta

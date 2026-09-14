@@ -1,0 +1,113 @@
+openapi: 3.1.0
+info:
+  title: Findings API schemas
+  version: 0.1.0
+  description: Findings, remediation ownership, and score suppression.
+paths: {}
+components:
+  schemas:
+    Finding:
+      type: object
+      required:
+      - id
+      - title
+      - severity
+      - state
+      - ownerId
+      - dueDate
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        severity:
+          type: string
+          enum:
+          - low
+          - medium
+          - high
+          - critical
+        state:
+          type: string
+          enum:
+          - open
+          - overdue
+          - closed
+          - accepted_risk
+        domains:
+          type: array
+          items:
+            $ref: ./common/vouchstone-primitives.yaml#/components/schemas/DomainKey
+        assetIds:
+          type: array
+          items:
+            type: string
+        ownerId:
+          type: string
+        dueDate:
+          type: string
+          format: date
+        origin:
+          type: string
+        suppressingDomainScore:
+          type: boolean
+        remediation:
+          $ref: "#/components/schemas/RemediationCommitment"
+      x-dynamodb:
+        entityType: FINDING
+        pkPatternTemplate: FINDING#${id}
+        skPatternTemplate: METADATA
+        pkPattern: entity
+        createdAtField: dueDate
+        updatedAtField: dueDate
+    RemediationCommitment:
+      type: object
+      required:
+      - ownerId
+      - targetDate
+      properties:
+        ownerId:
+          type: string
+        targetDate:
+          type: string
+          format: date
+        plan:
+          type: string
+        revisionCount:
+          type: integer
+        acceptedRiskRationale:
+          type: string
+        closedAt:
+          type: string
+          format: date-time
+        closureApprovedBy:
+          type: string
+    DataEnvelopeFinding:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/Finding"
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    ListEnvelopeFinding:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          type: object
+          required:
+          - items
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Finding"
+            nextCursor:
+              type: string
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta

@@ -1,0 +1,227 @@
+openapi: 3.1.0
+info:
+  title: Attribution API schemas
+  version: 0.1.0
+  description: Incident discoverer attribution and measured detection intervals.
+paths: {}
+components:
+  schemas:
+    Incident:
+      type: object
+      required:
+      - id
+      - confirmedAt
+      - severity
+      properties:
+        id:
+          type: string
+        confirmedAt:
+          type: string
+          format: date-time
+        severity:
+          type: string
+          enum:
+          - low
+          - moderate
+          - major
+          - critical
+        targeted:
+          type: boolean
+        objectiveAchievedByAttacker:
+          type: boolean
+        affectedAssetIds:
+          type: array
+          items:
+            type: string
+        threatClass:
+          type: string
+          enum:
+          - insider
+          - external_targeted
+          - external_opportunistic
+          - supply_chain
+          - unknown
+    DiscovererAttributionCreate:
+      type: object
+      required:
+      - discovererClass
+      - discoveredAt
+      - estimatedCompromiseAt
+      properties:
+        discovererClass:
+          type: string
+          enum:
+          - security_function
+          - other_employee
+          - authority_or_regulator
+          - external_researcher
+          - supplier
+          - customer
+          - unknown
+        discoveredAt:
+          type: string
+          format: date-time
+        estimatedCompromiseAt:
+          type: string
+          format: date-time
+        detectionSource:
+          type: string
+        recordedBy:
+          type: string
+    DiscovererAttribution:
+      type: object
+      required:
+      - id
+      - incidentId
+      - discovererClass
+      - discoveredAt
+      properties:
+        id:
+          type: string
+        incidentId:
+          type: string
+        discovererClass:
+          type: string
+          enum:
+          - security_function
+          - other_employee
+          - authority_or_regulator
+          - external_researcher
+          - supplier
+          - customer
+          - unknown
+        discoveredAt:
+          type: string
+          format: date-time
+        incident:
+          $ref: "#/components/schemas/Incident"
+        detectionInterval:
+          $ref: "#/components/schemas/DetectionInterval"
+        recordedBy:
+          type: string
+        appendOnly:
+          type: boolean
+          default: true
+      x-dynamodb:
+        entityType: ATTRIBUTION
+        pkPatternTemplate: ATTRIBUTION#${id}
+        skPatternTemplate: METADATA
+        pkPattern: entity
+        createdAtField: discoveredAt
+    DetectionInterval:
+      type: object
+      properties:
+        incidentId:
+          type: string
+        estimatedCompromiseAt:
+          type: string
+          format: date-time
+        discoveredAt:
+          type: string
+          format: date-time
+        days:
+          type: integer
+        band:
+          type: string
+          enum:
+          - hours
+          - days
+          - weeks
+          - months
+          - year_or_more
+        measured:
+          type: boolean
+          default: true
+    DiscoveryShareReport:
+      type: object
+      properties:
+        period:
+          type: string
+        confirmedSuccessfulAttacks:
+          type: integer
+        securityFunctionDiscoveryShare:
+          type: number
+          format: float
+        byDiscovererClass:
+          type: array
+          items:
+            type: object
+            properties:
+              discovererClass:
+                type: string
+              count:
+                type: integer
+              share:
+                type: number
+                format: float
+        targetedAttacksObserved:
+          type: integer
+        targetedAttacksAchievingObjective:
+          type: integer
+        successfulAttacksPerMonth:
+          type: number
+          format: float
+    DetectionIntervalDistribution:
+      type: object
+      properties:
+        period:
+          type: string
+        sampleSize:
+          type: integer
+        medianDays:
+          type: number
+          format: float
+        ninetiethPercentileDays:
+          type: number
+          format: float
+        byBand:
+          type: array
+          items:
+            type: object
+            properties:
+              band:
+                type: string
+                enum:
+                - hours
+                - days
+                - weeks
+                - months
+                - year_or_more
+              count:
+                type: integer
+              share:
+                type: number
+                format: float
+        estimatesExcluded:
+          type: boolean
+          default: true
+    DataEnvelopeDiscovererAttribution:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/DiscovererAttribution"
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    DataEnvelopeDiscoveryShareReport:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/DiscoveryShareReport"
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    DataEnvelopeDetectionIntervalDistribution:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/DetectionIntervalDistribution"
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta

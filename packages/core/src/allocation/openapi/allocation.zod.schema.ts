@@ -1,0 +1,494 @@
+import { makeApi, Zodios, type ZodiosOptions } from '@zodios/core';
+import { z } from 'zod';
+
+const recordImpactBelief_Body = z
+  .object({
+    threatClass: z.enum([
+      'insider',
+      'external_targeted',
+      'external_opportunistic',
+      'supply_chain',
+    ]),
+    believedImpactRank: z.number().int().gte(1),
+    believedShare: z.number().optional(),
+    capturedFrom: z.enum([
+      'executive_survey',
+      'risk_register',
+      'committee_minute',
+      'workshop',
+    ]),
+    capturedAt: z.string().datetime({ offset: true }).optional(),
+    trustInInternalControls: z.number().optional(),
+  })
+  .passthrough();
+const ImpactBelief = z
+  .object({
+    threatClass: z.enum([
+      'insider',
+      'external_targeted',
+      'external_opportunistic',
+      'supply_chain',
+    ]),
+    believedImpactRank: z.number().int().gte(1),
+    believedShare: z.number().optional(),
+    capturedFrom: z.enum([
+      'executive_survey',
+      'risk_register',
+      'committee_minute',
+      'workshop',
+    ]),
+    capturedAt: z.string().datetime({ offset: true }).optional(),
+    trustInInternalControls: z.number().optional(),
+  })
+  .passthrough();
+const DomainKey = z.enum([
+  'risk_exposure',
+  'governance_and_leadership',
+  'strategic_context',
+  'resilience',
+  'response_capability',
+  'extended_ecosystem',
+  'efficient_investment',
+]);
+const Money = z
+  .object({ amount: z.number(), currency: z.string() })
+  .passthrough();
+const ControlInvestment = z
+  .object({
+    domain: z.enum([
+      'risk_exposure',
+      'governance_and_leadership',
+      'strategic_context',
+      'resilience',
+      'response_capability',
+      'extended_ecosystem',
+      'efficient_investment',
+    ]),
+    threatClass: z
+      .enum([
+        'insider',
+        'external_targeted',
+        'external_opportunistic',
+        'supply_chain',
+      ])
+      .optional(),
+    amount: z
+      .object({ amount: z.number(), currency: z.string() })
+      .passthrough(),
+    effortFullTimeEquivalents: z.number().optional(),
+    period: z.string(),
+    sourceSystem: z.string().optional(),
+  })
+  .passthrough();
+const AllocationDivergence = z
+  .object({
+    threatClass: z.string(),
+    believedImpactShare: z.number(),
+    actualInvestmentShare: z.number(),
+    divergencePoints: z.number(),
+    findingId: z.string(),
+  })
+  .partial()
+  .passthrough();
+const AllocationReconciliation = z
+  .object({
+    period: z.string(),
+    beliefs: z.array(
+      z
+        .object({
+          threatClass: z.enum([
+            'insider',
+            'external_targeted',
+            'external_opportunistic',
+            'supply_chain',
+          ]),
+          believedImpactRank: z.number().int().gte(1),
+          believedShare: z.number().optional(),
+          capturedFrom: z.enum([
+            'executive_survey',
+            'risk_register',
+            'committee_minute',
+            'workshop',
+          ]),
+          capturedAt: z.string().datetime({ offset: true }).optional(),
+          trustInInternalControls: z.number().optional(),
+        })
+        .passthrough()
+    ),
+    investments: z.array(
+      z
+        .object({
+          domain: z.enum([
+            'risk_exposure',
+            'governance_and_leadership',
+            'strategic_context',
+            'resilience',
+            'response_capability',
+            'extended_ecosystem',
+            'efficient_investment',
+          ]),
+          threatClass: z
+            .enum([
+              'insider',
+              'external_targeted',
+              'external_opportunistic',
+              'supply_chain',
+            ])
+            .optional(),
+          amount: z
+            .object({ amount: z.number(), currency: z.string() })
+            .passthrough(),
+          effortFullTimeEquivalents: z.number().optional(),
+          period: z.string(),
+          sourceSystem: z.string().optional(),
+        })
+        .passthrough()
+    ),
+    divergences: z.array(
+      z
+        .object({
+          threatClass: z.string(),
+          believedImpactShare: z.number(),
+          actualInvestmentShare: z.number(),
+          divergencePoints: z.number(),
+          findingId: z.string(),
+        })
+        .partial()
+        .passthrough()
+    ),
+    standingFindingRaised: z.boolean(),
+  })
+  .partial()
+  .passthrough();
+const ResponseMeta = z
+  .object({
+    requestId: z.string().uuid(),
+    correlationId: z.string(),
+    generatedAt: z.string().datetime({ offset: true }),
+  })
+  .partial()
+  .passthrough();
+const DataEnvelopeAllocationReconciliation = z
+  .object({
+    data: z
+      .object({
+        period: z.string(),
+        beliefs: z.array(
+          z
+            .object({
+              threatClass: z.enum([
+                'insider',
+                'external_targeted',
+                'external_opportunistic',
+                'supply_chain',
+              ]),
+              believedImpactRank: z.number().int().gte(1),
+              believedShare: z.number().optional(),
+              capturedFrom: z.enum([
+                'executive_survey',
+                'risk_register',
+                'committee_minute',
+                'workshop',
+              ]),
+              capturedAt: z.string().datetime({ offset: true }).optional(),
+              trustInInternalControls: z.number().optional(),
+            })
+            .passthrough()
+        ),
+        investments: z.array(
+          z
+            .object({
+              domain: z.enum([
+                'risk_exposure',
+                'governance_and_leadership',
+                'strategic_context',
+                'resilience',
+                'response_capability',
+                'extended_ecosystem',
+                'efficient_investment',
+              ]),
+              threatClass: z
+                .enum([
+                  'insider',
+                  'external_targeted',
+                  'external_opportunistic',
+                  'supply_chain',
+                ])
+                .optional(),
+              amount: z
+                .object({ amount: z.number(), currency: z.string() })
+                .passthrough(),
+              effortFullTimeEquivalents: z.number().optional(),
+              period: z.string(),
+              sourceSystem: z.string().optional(),
+            })
+            .passthrough()
+        ),
+        divergences: z.array(
+          z
+            .object({
+              threatClass: z.string(),
+              believedImpactShare: z.number(),
+              actualInvestmentShare: z.number(),
+              divergencePoints: z.number(),
+              findingId: z.string(),
+            })
+            .partial()
+            .passthrough()
+        ),
+        standingFindingRaised: z.boolean(),
+      })
+      .partial()
+      .passthrough(),
+    meta: z
+      .object({
+        requestId: z.string().uuid(),
+        correlationId: z.string(),
+        generatedAt: z.string().datetime({ offset: true }),
+      })
+      .partial()
+      .passthrough(),
+  })
+  .passthrough();
+const Problem = z
+  .object({
+    type: z.string().url(),
+    title: z.string(),
+    status: z.number().int(),
+    detail: z.string(),
+    instance: z.string().url(),
+    code: z.string(),
+  })
+  .partial()
+  .passthrough();
+const DataEnvelopeImpactBelief = z
+  .object({
+    data: z
+      .object({
+        threatClass: z.enum([
+          'insider',
+          'external_targeted',
+          'external_opportunistic',
+          'supply_chain',
+        ]),
+        believedImpactRank: z.number().int().gte(1),
+        believedShare: z.number().optional(),
+        capturedFrom: z.enum([
+          'executive_survey',
+          'risk_register',
+          'committee_minute',
+          'workshop',
+        ]),
+        capturedAt: z.string().datetime({ offset: true }).optional(),
+        trustInInternalControls: z.number().optional(),
+      })
+      .passthrough(),
+    meta: z
+      .object({
+        requestId: z.string().uuid(),
+        correlationId: z.string(),
+        generatedAt: z.string().datetime({ offset: true }),
+      })
+      .partial()
+      .passthrough(),
+  })
+  .passthrough();
+
+export const schemas: any = {
+  recordImpactBelief_Body,
+  ImpactBelief,
+  DomainKey,
+  Money,
+  ControlInvestment,
+  AllocationDivergence,
+  AllocationReconciliation,
+  ResponseMeta,
+  DataEnvelopeAllocationReconciliation,
+  Problem,
+  DataEnvelopeImpactBelief,
+};
+
+const endpoints = makeApi([
+  {
+    method: 'post',
+    path: '/v1/allocation/impact-beliefs',
+    alias: 'recordImpactBelief',
+    description: `Captures the organisation&#x27;s stated belief about which threat classes carry the greatest impact, for reconciliation against actual investment.`,
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'body',
+        type: 'Body',
+        schema: recordImpactBelief_Body,
+      },
+    ],
+    response: z
+      .object({
+        data: z
+          .object({
+            threatClass: z.enum([
+              'insider',
+              'external_targeted',
+              'external_opportunistic',
+              'supply_chain',
+            ]),
+            believedImpactRank: z.number().int().gte(1),
+            believedShare: z.number().optional(),
+            capturedFrom: z.enum([
+              'executive_survey',
+              'risk_register',
+              'committee_minute',
+              'workshop',
+            ]),
+            capturedAt: z.string().datetime({ offset: true }).optional(),
+            trustInInternalControls: z.number().optional(),
+          })
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough(),
+      })
+      .passthrough(),
+    errors: [
+      {
+        status: 401,
+        description: `Missing or invalid API key`,
+        schema: z
+          .object({
+            type: z.string().url(),
+            title: z.string(),
+            status: z.number().int(),
+            detail: z.string(),
+            instance: z.string().url(),
+            code: z.string(),
+          })
+          .partial()
+          .passthrough(),
+      },
+    ],
+  },
+  {
+    method: 'get',
+    path: '/v1/allocation/reconciliation',
+    alias: 'getAllocationReconciliation',
+    description: `Compares where the organisation believes impact concentrates against where control effort and spend actually go, and raises a standing divergence finding.`,
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'period',
+        type: 'Query',
+        schema: z.string().optional(),
+      },
+    ],
+    response: z
+      .object({
+        data: z
+          .object({
+            period: z.string(),
+            beliefs: z.array(
+              z
+                .object({
+                  threatClass: z.enum([
+                    'insider',
+                    'external_targeted',
+                    'external_opportunistic',
+                    'supply_chain',
+                  ]),
+                  believedImpactRank: z.number().int().gte(1),
+                  believedShare: z.number().optional(),
+                  capturedFrom: z.enum([
+                    'executive_survey',
+                    'risk_register',
+                    'committee_minute',
+                    'workshop',
+                  ]),
+                  capturedAt: z.string().datetime({ offset: true }).optional(),
+                  trustInInternalControls: z.number().optional(),
+                })
+                .passthrough()
+            ),
+            investments: z.array(
+              z
+                .object({
+                  domain: z.enum([
+                    'risk_exposure',
+                    'governance_and_leadership',
+                    'strategic_context',
+                    'resilience',
+                    'response_capability',
+                    'extended_ecosystem',
+                    'efficient_investment',
+                  ]),
+                  threatClass: z
+                    .enum([
+                      'insider',
+                      'external_targeted',
+                      'external_opportunistic',
+                      'supply_chain',
+                    ])
+                    .optional(),
+                  amount: z
+                    .object({ amount: z.number(), currency: z.string() })
+                    .passthrough(),
+                  effortFullTimeEquivalents: z.number().optional(),
+                  period: z.string(),
+                  sourceSystem: z.string().optional(),
+                })
+                .passthrough()
+            ),
+            divergences: z.array(
+              z
+                .object({
+                  threatClass: z.string(),
+                  believedImpactShare: z.number(),
+                  actualInvestmentShare: z.number(),
+                  divergencePoints: z.number(),
+                  findingId: z.string(),
+                })
+                .partial()
+                .passthrough()
+            ),
+            standingFindingRaised: z.boolean(),
+          })
+          .partial()
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough(),
+      })
+      .passthrough(),
+    errors: [
+      {
+        status: 401,
+        description: `Missing or invalid API key`,
+        schema: z
+          .object({
+            type: z.string().url(),
+            title: z.string(),
+            status: z.number().int(),
+            detail: z.string(),
+            instance: z.string().url(),
+            code: z.string(),
+          })
+          .partial()
+          .passthrough(),
+      },
+    ],
+  },
+]);
+
+export const api: any = new Zodios('https://api.vouchstone.local/v1', endpoints);
+
+export function createApiClient(baseUrl: string, options?: ZodiosOptions): any {
+  return new Zodios(baseUrl, endpoints, options);
+}

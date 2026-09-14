@@ -1,0 +1,120 @@
+openapi: 3.1.0
+info:
+  title: Assurance API
+  version: 0.1.0
+  description: Assurance statement assembly and single-sourced exports.
+  license:
+    name: Proprietary
+    url: https://vouchstone.local/license
+  x-domain: asr
+servers:
+- url: https://api.vouchstone.local
+  description: Local / starter API
+security:
+- bearerJWT: []
+- apiKey: []
+tags:
+- name: Assurance
+  description: Assurance statement assembly and single-sourced exports
+paths:
+  /v1/assurance/statements:
+    get:
+      operationId: listAssuranceStatements
+      tags:
+      - Assurance
+      security:
+      - bearerJWT: []
+      parameters:
+      - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+      - $ref: ./common/parameters.yaml#/components/parameters/Limit
+      responses:
+        '200':
+          description: Assurance statements page
+          content:
+            application/json:
+              schema:
+                $ref: ./assurance.schemas.yaml#/components/schemas/ListEnvelopeAssuranceStatement
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+      x-repository: AssuranceStatement
+      summary: List Assurance Statements
+    post:
+      operationId: signAssuranceStatement
+      tags:
+      - Assurance
+      description: Signs and freezes the statement together with the exact evidence validity state at
+        the moment of publication. Immutable thereafter.
+      security:
+      - bearerJWT: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./assurance.schemas.yaml#/components/schemas/AssuranceStatementCreate
+      responses:
+        '201':
+          description: Statement signed and frozen
+          content:
+            application/json:
+              schema:
+                $ref: ./assurance.schemas.yaml#/components/schemas/DataEnvelopeAssuranceStatement
+        '409':
+          $ref: ./common/responses.yaml#/components/responses/Conflict
+      x-repository: AssuranceStatement
+      summary: Signs and freezes the statement together with the exact evidence validity state at the
+        moment of ...
+  /v1/assurance/statements/{statementId}/exports:
+    parameters:
+    - $ref: '#/components/parameters/StatementId'
+    post:
+      operationId: exportAssurancePackage
+      tags:
+      - Assurance
+      description: Generates the committee pack, regulatory return, or insurance proposal response from
+        the one frozen evidence base, with claim-level traceability.
+      security:
+      - bearerJWT: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - audience
+              properties:
+                audience:
+                  type: string
+                  enum:
+                  - audit_risk_committee
+                  - sector_regulator
+                  - cyber_insurer
+                  - internal_audit
+                recipient:
+                  type: string
+      responses:
+        '201':
+          description: Export package generated
+          content:
+            application/json:
+              schema:
+                $ref: ./assurance.schemas.yaml#/components/schemas/DataEnvelopeExportPackage
+        '403':
+          $ref: ./common/responses.yaml#/components/responses/Forbidden
+      x-repository: ExportPackage
+      summary: Generates the committee pack, regulatory return, or insurance proposal response from the
+        one froz...
+components:
+  securitySchemes:
+    bearerJWT:
+      $ref: ./common/security.yaml#/components/securitySchemes/bearerJWT
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey
+  parameters:
+    StatementId:
+      name: statementId
+      in: path
+      required: true
+      schema:
+        type: string

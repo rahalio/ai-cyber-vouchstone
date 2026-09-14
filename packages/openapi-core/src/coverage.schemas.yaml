@@ -1,0 +1,114 @@
+openapi: 3.1.0
+info:
+  title: Coverage API schemas
+  version: 0.1.0
+  description: Detection coverage and named gaps over priority assets.
+paths: {}
+components:
+  schemas:
+    DetectionCoverage:
+      type: object
+      required:
+      - assetId
+      - coverageState
+      properties:
+        assetId:
+          type: string
+        coverageState:
+          type: string
+          enum:
+          - covered
+          - partial
+          - uncovered
+          - unknown
+        monitoredSurfaces:
+          type: array
+          items:
+            type: string
+            enum:
+            - endpoint
+            - network
+            - identity
+            - application
+            - database
+            - cloud_control_plane
+            - privileged_access
+        insiderActivityMonitored:
+          type: boolean
+        lastVerifiedAt:
+          type: string
+          format: date-time
+        evidenceItemId:
+          type: string
+      x-dynamodb:
+        entityType: COVERAGE
+        pkPatternTemplate: COVERAGE#${assetId}
+        skPatternTemplate: METADATA
+        pkPattern: entity
+        updatedAtField: lastVerifiedAt
+    CoverageGap:
+      type: object
+      required:
+      - id
+      - assetId
+      - description
+      properties:
+        id:
+          type: string
+        assetId:
+          type: string
+        description:
+          type: string
+        surface:
+          type: string
+        openedAt:
+          type: string
+          format: date-time
+        findingId:
+          type: string
+        compartment:
+          type: string
+      x-dynamodb:
+        entityType: GAP
+        pkPatternTemplate: GAP#${id}
+        skPatternTemplate: METADATA
+        pkPattern: entity
+        createdAtField: openedAt
+    ListEnvelopeDetectionCoverage:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          type: object
+          required:
+          - items
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/DetectionCoverage"
+            nextCursor:
+              type: string
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    ListEnvelopeCoverageGap:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          type: object
+          required:
+          - items
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/CoverageGap"
+            nextCursor:
+              type: string
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta

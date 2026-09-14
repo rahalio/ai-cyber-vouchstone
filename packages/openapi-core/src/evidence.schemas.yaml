@@ -1,0 +1,164 @@
+openapi: 3.1.0
+info:
+  title: Evidence API schemas
+  version: 0.1.0
+  description: Typed evidence items, validity clocks, and lapse.
+paths: {}
+components:
+  schemas:
+    EvidenceItem:
+      type: object
+      required:
+      - id
+      - typeKey
+      - domains
+      - effectiveDate
+      - validity
+      properties:
+        id:
+          type: string
+        typeKey:
+          type: string
+        domains:
+          type: array
+          items:
+            $ref: ./common/vouchstone-primitives.yaml#/components/schemas/DomainKey
+        assetIds:
+          type: array
+          items:
+            type: string
+        effectiveDate:
+          type: string
+          format: date
+        expiresAt:
+          type: string
+          format: date-time
+        validity:
+          type: string
+          enum:
+          - valid
+          - expiring
+          - expired
+          - superseded
+        provenance:
+          type: string
+          enum:
+          - internal
+          - independent_provider
+          - regulator
+          - supplier
+          - auditor
+        providerName:
+          type: string
+        artefactReference:
+          type: string
+        supersededById:
+          type: string
+      x-dynamodb:
+        entityType: EVIDENCE
+        pkPatternTemplate: EVIDENCE#${id}
+        skPatternTemplate: METADATA
+        pkPattern: entity
+        createdAtField: effectiveDate
+        updatedAtField: expiresAt
+    EvidenceItemCreate:
+      type: object
+      required:
+      - typeKey
+      - domains
+      - effectiveDate
+      - provenance
+      properties:
+        typeKey:
+          type: string
+        domains:
+          type: array
+          items:
+            $ref: ./common/vouchstone-primitives.yaml#/components/schemas/DomainKey
+        assetIds:
+          type: array
+          items:
+            type: string
+        effectiveDate:
+          type: string
+          format: date
+        provenance:
+          type: string
+          enum:
+          - internal
+          - independent_provider
+          - regulator
+          - supplier
+          - auditor
+        providerName:
+          type: string
+        artefactReference:
+          type: string
+    EvidenceExpiryForecast:
+      type: object
+      properties:
+        horizonDays:
+          type: integer
+        generatedAt:
+          type: string
+          format: date-time
+        lapses:
+          type: array
+          items:
+            type: object
+            properties:
+              evidenceItemId:
+                type: string
+              typeKey:
+                type: string
+              expiresAt:
+                type: string
+                format: date-time
+              affectedDomains:
+                type: array
+                items:
+                  $ref: ./common/vouchstone-primitives.yaml#/components/schemas/DomainKey
+              projectedCapAfterLapse:
+                type: integer
+        projectedOverallScoreChange:
+          type: number
+          format: float
+    DataEnvelopeEvidenceItem:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/EvidenceItem"
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    DataEnvelopeEvidenceExpiryForecast:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/EvidenceExpiryForecast"
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    ListEnvelopeEvidenceItem:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          type: object
+          required:
+          - items
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/EvidenceItem"
+            nextCursor:
+              type: string
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta

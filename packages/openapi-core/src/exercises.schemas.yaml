@@ -1,0 +1,153 @@
+openapi: 3.1.0
+info:
+  title: Exercises API schemas
+  version: 0.1.0
+  description: Adversary emulation scheduling, scope, and outcomes.
+paths: {}
+components:
+  schemas:
+    EmulationExercise:
+      type: object
+      required:
+      - id
+      - status
+      - dueDate
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum:
+          - scheduled
+          - executed
+          - deferred
+          - missed
+          - expired
+        dueDate:
+          type: string
+          format: date
+        executedAt:
+          type: string
+          format: date-time
+        providerName:
+          type: string
+        providerIndependent:
+          type: boolean
+        scopeAssetIds:
+          type: array
+          items:
+            type: string
+        scenario:
+          type: string
+          enum:
+          - insider_privilege_abuse
+          - determined_external_adversary
+          - supply_chain_entry
+          - ransomware_resilience
+          - data_exfiltration
+        outcome:
+          type: string
+          enum:
+          - objectives_blocked
+          - partially_blocked
+          - objectives_achieved
+          - inconclusive
+        detectedByDefenders:
+          type: boolean
+        findingIds:
+          type: array
+          items:
+            type: string
+        evidenceItemId:
+          type: string
+      x-dynamodb:
+        entityType: EXERCISE
+        pkPatternTemplate: EXERCISE#${id}
+        skPatternTemplate: METADATA
+        pkPattern: entity
+        createdAtField: dueDate
+        updatedAtField: executedAt
+    EmulationExerciseCreate:
+      type: object
+      required:
+      - dueDate
+      - providerName
+      - scopeAssetIds
+      - scenario
+      properties:
+        dueDate:
+          type: string
+          format: date
+        providerName:
+          type: string
+        providerIndependent:
+          type: boolean
+          default: true
+        scopeAssetIds:
+          type: array
+          items:
+            type: string
+        scenario:
+          type: string
+          enum:
+          - insider_privilege_abuse
+          - determined_external_adversary
+          - supply_chain_entry
+          - ransomware_resilience
+          - data_exfiltration
+    ExerciseOutcomeCreate:
+      type: object
+      required:
+      - outcome
+      - executedAt
+      properties:
+        outcome:
+          type: string
+          enum:
+          - objectives_blocked
+          - partially_blocked
+          - objectives_achieved
+          - inconclusive
+        executedAt:
+          type: string
+          format: date-time
+        detectedByDefenders:
+          type: boolean
+        timeToDetectHours:
+          type: number
+          format: float
+        findings:
+          type: array
+          items:
+            $ref: ./common/vouchstone-primitives.yaml#/components/schemas/FindingCreate
+        reportReference:
+          type: string
+    DataEnvelopeEmulationExercise:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/EmulationExercise"
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    ListEnvelopeEmulationExercise:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          type: object
+          required:
+          - items
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/EmulationExercise"
+            nextCursor:
+              type: string
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta

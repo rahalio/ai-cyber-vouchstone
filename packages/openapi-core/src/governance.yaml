@@ -1,0 +1,92 @@
+openapi: 3.1.0
+info:
+  title: Governance API
+  version: 0.1.0
+  description: Committee-owned validity rules, weightings, caps, and change log.
+  license:
+    name: Proprietary
+    url: https://vouchstone.local/license
+  x-domain: gov
+servers:
+- url: https://api.vouchstone.local
+  description: Local / starter API
+security:
+- bearerJWT: []
+- apiKey: []
+tags:
+- name: Governance
+  description: Committee-owned validity rules, weightings, caps, and change log
+paths:
+  /v1/governance/settings:
+    get:
+      operationId: getGovernanceSettings
+      tags:
+      - Governance
+      security:
+      - bearerJWT: []
+      responses:
+        '200':
+          description: Committee-owned validity rules, weightings, and caps
+          content:
+            application/json:
+              schema:
+                $ref: ./governance.schemas.yaml#/components/schemas/DataEnvelopeGovernanceSetting
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+      x-repository: GovernanceSetting
+      summary: Get Governance Settings
+    put:
+      operationId: updateGovernanceSettings
+      tags:
+      - Governance
+      description: Requires the committee scope. The scored security function cannot alter the mechanism
+        by which it is measured.
+      security:
+      - bearerJWT: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./governance.schemas.yaml#/components/schemas/GovernanceSettingUpdate
+      responses:
+        '200':
+          description: Settings updated with an approval record
+          content:
+            application/json:
+              schema:
+                $ref: ./governance.schemas.yaml#/components/schemas/DataEnvelopeGovernanceSetting
+        '403':
+          $ref: ./common/responses.yaml#/components/responses/Forbidden
+      x-repository: GovernanceSetting
+      summary: Requires the committee scope. The scored security function cannot alter the mechanism by
+        which it...
+  /v1/governance/access-log:
+    get:
+      operationId: listAccessLog
+      tags:
+      - Governance
+      description: Reads of the asset register, coverage gaps, and exercise findings are recorded and
+        reviewable.
+      security:
+      - bearerJWT: []
+      parameters:
+      - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+      - $ref: ./common/parameters.yaml#/components/parameters/Limit
+      responses:
+        '200':
+          description: Access log page
+          content:
+            application/json:
+              schema:
+                $ref: ./governance.schemas.yaml#/components/schemas/ListEnvelopeAccessLogEntry
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+      x-repository: AccessLogEntry
+      summary: Reads of the asset register, coverage gaps, and exercise findings are recorded and reviewable.
+components:
+  securitySchemes:
+    bearerJWT:
+      $ref: ./common/security.yaml#/components/securitySchemes/bearerJWT
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey

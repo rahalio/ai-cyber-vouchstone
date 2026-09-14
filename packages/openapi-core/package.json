@@ -1,0 +1,18 @@
+{
+  "name": "@vouchstone/openapi-core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OpenAPI contracts for Vouchstone (common + identity + product domains)",
+  "scripts": {
+    "lint:domains": "redocly lint",
+    "bundle:domains": "mkdir -p src/.bundled && redocly bundle identity --output src/.bundled/identity.openapi.yaml && redocly bundle identity --output src/.bundled/identity.json && redocly bundle assets --output src/.bundled/assets.openapi.yaml && redocly bundle assets --output src/.bundled/assets.json && redocly bundle evidence --output src/.bundled/evidence.openapi.yaml && redocly bundle evidence --output src/.bundled/evidence.json && redocly bundle domains --output src/.bundled/domains.openapi.yaml && redocly bundle domains --output src/.bundled/domains.json && redocly bundle coverage --output src/.bundled/coverage.openapi.yaml && redocly bundle coverage --output src/.bundled/coverage.json && redocly bundle attribution --output src/.bundled/attribution.openapi.yaml && redocly bundle attribution --output src/.bundled/attribution.json && redocly bundle exercises --output src/.bundled/exercises.openapi.yaml && redocly bundle exercises --output src/.bundled/exercises.json && redocly bundle findings --output src/.bundled/findings.openapi.yaml && redocly bundle findings --output src/.bundled/findings.json && redocly bundle allocation --output src/.bundled/allocation.openapi.yaml && redocly bundle allocation --output src/.bundled/allocation.json && redocly bundle assurance --output src/.bundled/assurance.openapi.yaml && redocly bundle assurance --output src/.bundled/assurance.json && redocly bundle governance --output src/.bundled/governance.openapi.yaml && redocly bundle governance --output src/.bundled/governance.json",
+    "lint": "pnpm run lint:domains",
+    "bundle": "pnpm run bundle:domains"
+  },
+  "devDependencies": {
+    "@redocly/cli": "^1.34.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

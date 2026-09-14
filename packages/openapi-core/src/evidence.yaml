@@ -1,0 +1,113 @@
+openapi: 3.1.0
+info:
+  title: Evidence API
+  version: 0.1.0
+  description: Typed evidence items, validity clocks, and lapse.
+  license:
+    name: Proprietary
+    url: https://vouchstone.local/license
+  x-domain: evd
+servers:
+- url: https://api.vouchstone.local
+  description: Local / starter API
+security:
+- bearerJWT: []
+- apiKey: []
+tags:
+- name: Evidence
+  description: Typed evidence items, validity clocks, and lapse
+paths:
+  /v1/evidence:
+    get:
+      operationId: listEvidenceItems
+      tags:
+      - Evidence
+      security:
+      - bearerJWT: []
+      parameters:
+      - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+      - $ref: ./common/parameters.yaml#/components/parameters/Limit
+      - name: domain
+        in: query
+        schema:
+          $ref: ./common/vouchstone-primitives.yaml#/components/schemas/DomainKey
+      - name: validity
+        in: query
+        schema:
+          type: string
+          enum:
+          - valid
+          - expiring
+          - expired
+          - superseded
+      responses:
+        '200':
+          description: Evidence items page with validity state
+          content:
+            application/json:
+              schema:
+                $ref: ./evidence.schemas.yaml#/components/schemas/ListEnvelopeEvidenceItem
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+      x-repository: EvidenceItem
+      summary: List Evidence Items
+    post:
+      operationId: submitEvidenceItem
+      tags:
+      - Evidence
+      description: Submit typed evidence. The validity period is derived from the committee-owned rule
+        for the evidence type and cannot be set by the submitter.
+      security:
+      - bearerJWT: []
+      - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./evidence.schemas.yaml#/components/schemas/EvidenceItemCreate
+      responses:
+        '201':
+          description: Evidence accepted with a derived expiry
+          content:
+            application/json:
+              schema:
+                $ref: ./evidence.schemas.yaml#/components/schemas/DataEnvelopeEvidenceItem
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+      x-repository: EvidenceItem
+      summary: Submit typed evidence. The validity period is derived from the committee-owned rule for
+        the evide...
+  /v1/evidence/expiry-forecast:
+    get:
+      operationId: getEvidenceExpiryForecast
+      tags:
+      - Evidence
+      description: Forward view of evidence lapsing in the requested horizon and the score impact of each
+        lapse.
+      security:
+      - bearerJWT: []
+      parameters:
+      - name: horizonDays
+        in: query
+        schema:
+          type: integer
+          default: 180
+      responses:
+        '200':
+          description: Expiry forecast with projected score impact
+          content:
+            application/json:
+              schema:
+                $ref: ./evidence.schemas.yaml#/components/schemas/DataEnvelopeEvidenceExpiryForecast
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+      x-repository: none
+      summary: Forward view of evidence lapsing in the requested horizon and the score impact of each
+        lapse.
+components:
+  securitySchemes:
+    bearerJWT:
+      $ref: ./common/security.yaml#/components/securitySchemes/bearerJWT
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey

@@ -1,0 +1,127 @@
+openapi: 3.1.0
+info:
+  title: Assets API
+  version: 0.1.0
+  description: Priority asset register, locations, and owner attestations.
+  license:
+    name: Proprietary
+    url: https://vouchstone.local/license
+  x-domain: ast
+servers:
+- url: https://api.vouchstone.local
+  description: Local / starter API
+security:
+- bearerJWT: []
+- apiKey: []
+tags:
+- name: Assets
+  description: Priority asset register, locations, and owner attestations
+paths:
+  /v1/assets:
+    get:
+      operationId: listPriorityAssets
+      tags:
+      - Assets
+      description: Compartmented. Callers see only assets within their attestation or role scope.
+      security:
+      - bearerJWT: []
+      parameters:
+      - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+      - $ref: ./common/parameters.yaml#/components/parameters/Limit
+      - name: attestationState
+        in: query
+        schema:
+          type: string
+          enum:
+          - current
+          - due
+          - stale
+          - never_attested
+      - name: businessCriticality
+        in: query
+        schema:
+          type: string
+          enum:
+          - low
+          - medium
+          - high
+          - crown_jewel
+      responses:
+        '200':
+          description: Priority assets page
+          content:
+            application/json:
+              schema:
+                $ref: ./assets.schemas.yaml#/components/schemas/ListEnvelopePriorityAsset
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ./common/responses.yaml#/components/responses/Forbidden
+      x-repository: PriorityAsset
+      summary: Compartmented. Callers see only assets within their attestation or role scope.
+    post:
+      operationId: registerPriorityAsset
+      tags:
+      - Assets
+      security:
+      - bearerJWT: []
+      - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./assets.schemas.yaml#/components/schemas/PriorityAssetCreate
+      responses:
+        '201':
+          description: Priority asset registered pending owner attestation
+          content:
+            application/json:
+              schema:
+                $ref: ./assets.schemas.yaml#/components/schemas/DataEnvelopePriorityAsset
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+      x-repository: PriorityAsset
+      summary: Register Priority Asset
+  /v1/assets/{assetId}/attestation:
+    parameters:
+    - $ref: '#/components/parameters/AssetId'
+    post:
+      operationId: attestPriorityAsset
+      tags:
+      - Assets
+      description: Business owner attests to the asset and its recorded location, restarting the re-attestation
+        clock.
+      security:
+      - bearerJWT: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./assets.schemas.yaml#/components/schemas/AssetAttestationCreate
+      responses:
+        '201':
+          description: Attestation recorded
+          content:
+            application/json:
+              schema:
+                $ref: ./assets.schemas.yaml#/components/schemas/DataEnvelopeAssetAttestation
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+      x-repository: AssetAttestation
+      summary: Business owner attests to the asset and its recorded location, restarting the re-attestation
+        clock.
+components:
+  securitySchemes:
+    bearerJWT:
+      $ref: ./common/security.yaml#/components/securitySchemes/bearerJWT
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey
+  parameters:
+    AssetId:
+      name: assetId
+      in: path
+      required: true
+      schema:
+        type: string

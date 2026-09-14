@@ -1,0 +1,163 @@
+openapi: 3.1.0
+info:
+  title: Assets API schemas
+  version: 0.1.0
+  description: Priority asset register, locations, and owner attestations.
+paths: {}
+components:
+  schemas:
+    PriorityAsset:
+      type: object
+      required:
+      - id
+      - name
+      - businessCriticality
+      - ownerId
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        businessCriticality:
+          type: string
+          enum:
+          - low
+          - medium
+          - high
+          - crown_jewel
+        ownerId:
+          type: string
+        businessUnit:
+          type: string
+        location:
+          type: string
+          description: Recorded location, restricted to the asset owner's compartment
+        adversaryObjective:
+          type: string
+          description: What an adversary is believed to be after on this asset
+        attestationState:
+          type: string
+          enum:
+          - current
+          - due
+          - stale
+          - never_attested
+        reattestationIntervalDays:
+          type: integer
+        lastAttestedAt:
+          type: string
+          format: date-time
+      x-dynamodb:
+        entityType: ASSET
+        pkPatternTemplate: ASSET#${id}
+        skPatternTemplate: METADATA
+        pkPattern: entity
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+    PriorityAssetCreate:
+      type: object
+      required:
+      - name
+      - businessCriticality
+      - ownerId
+      properties:
+        name:
+          type: string
+        businessCriticality:
+          type: string
+          enum:
+          - low
+          - medium
+          - high
+          - crown_jewel
+        ownerId:
+          type: string
+        businessUnit:
+          type: string
+        location:
+          type: string
+        adversaryObjective:
+          type: string
+        reattestationIntervalDays:
+          type: integer
+    AssetAttestation:
+      type: object
+      required:
+      - id
+      - assetId
+      - attestedBy
+      - attestedAt
+      properties:
+        id:
+          type: string
+        assetId:
+          type: string
+        attestedBy:
+          type: string
+        attestedAt:
+          type: string
+          format: date-time
+        locationConfirmed:
+          type: boolean
+        expiresAt:
+          type: string
+          format: date-time
+      x-dynamodb:
+        entityType: ATTESTATION
+        pkPatternTemplate: ASSET#${assetId}
+        skPatternTemplate: ATTEST#${id}
+        pkPattern: entity
+        createdAtField: attestedAt
+    AssetAttestationCreate:
+      type: object
+      required:
+      - locationConfirmed
+      - attestedBy
+      properties:
+        locationConfirmed:
+          type: boolean
+        attestedBy:
+          type: string
+        locationCorrection:
+          type: string
+        notes:
+          type: string
+    DataEnvelopePriorityAsset:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/PriorityAsset"
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    DataEnvelopeAssetAttestation:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/AssetAttestation"
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    ListEnvelopePriorityAsset:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          type: object
+          required:
+          - items
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/PriorityAsset"
+            nextCursor:
+              type: string
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta

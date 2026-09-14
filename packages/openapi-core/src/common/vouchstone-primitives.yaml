@@ -1,0 +1,72 @@
+openapi: 3.1.0
+info:
+  title: Vouchstone shared primitives
+  version: 0.1.0
+  description: Cross-domain Vouchstone types (DomainKey, Money, FindingCreate).
+paths: {}
+components:
+  schemas:
+    DomainKey:
+      type: string
+      enum:
+      - risk_exposure
+      - governance_and_leadership
+      - strategic_context
+      - resilience
+      - response_capability
+      - extended_ecosystem
+      - efficient_investment
+    Money:
+      type: object
+      required:
+      - amount
+      - currency
+      properties:
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+          example: EUR
+    FindingCreate:
+      type: object
+      required:
+      - title
+      - severity
+      - domains
+      - ownerId
+      - dueDate
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        severity:
+          type: string
+          enum:
+          - low
+          - medium
+          - high
+          - critical
+        domains:
+          type: array
+          items:
+            $ref: "#/components/schemas/DomainKey"
+        assetIds:
+          type: array
+          items:
+            type: string
+        ownerId:
+          type: string
+        dueDate:
+          type: string
+          format: date
+        origin:
+          type: string
+          enum:
+          - exercise
+          - incident
+          - evidence_lapse
+          - audit
+          - allocation_divergence
+          - coverage_gap

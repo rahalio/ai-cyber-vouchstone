@@ -1,0 +1,564 @@
+import { makeApi, Zodios, type ZodiosOptions } from '@zodios/core';
+import { z } from 'zod';
+
+const raiseFinding_Body = z
+  .object({
+    title: z.string(),
+    description: z.string().optional(),
+    severity: z.enum(['low', 'medium', 'high', 'critical']),
+    domains: z.array(
+      z.enum([
+        'risk_exposure',
+        'governance_and_leadership',
+        'strategic_context',
+        'resilience',
+        'response_capability',
+        'extended_ecosystem',
+        'efficient_investment',
+      ])
+    ),
+    assetIds: z.array(z.string()).optional(),
+    ownerId: z.string(),
+    dueDate: z.string(),
+    origin: z
+      .enum([
+        'exercise',
+        'incident',
+        'evidence_lapse',
+        'audit',
+        'allocation_divergence',
+        'coverage_gap',
+      ])
+      .optional(),
+  })
+  .passthrough();
+const updateRemediationCommitment_Body = z
+  .object({
+    ownerId: z.string(),
+    targetDate: z.string(),
+    plan: z.string().optional(),
+    revisionCount: z.number().int().optional(),
+    acceptedRiskRationale: z.string().optional(),
+    closedAt: z.string().datetime({ offset: true }).optional(),
+    closureApprovedBy: z.string().optional(),
+  })
+  .passthrough();
+const DomainKey = z.enum([
+  'risk_exposure',
+  'governance_and_leadership',
+  'strategic_context',
+  'resilience',
+  'response_capability',
+  'extended_ecosystem',
+  'efficient_investment',
+]);
+const RemediationCommitment = z
+  .object({
+    ownerId: z.string(),
+    targetDate: z.string(),
+    plan: z.string().optional(),
+    revisionCount: z.number().int().optional(),
+    acceptedRiskRationale: z.string().optional(),
+    closedAt: z.string().datetime({ offset: true }).optional(),
+    closureApprovedBy: z.string().optional(),
+  })
+  .passthrough();
+const Finding = z
+  .object({
+    id: z.string(),
+    title: z.string(),
+    severity: z.enum(['low', 'medium', 'high', 'critical']),
+    state: z.enum(['open', 'overdue', 'closed', 'accepted_risk']),
+    domains: z
+      .array(
+        z.enum([
+          'risk_exposure',
+          'governance_and_leadership',
+          'strategic_context',
+          'resilience',
+          'response_capability',
+          'extended_ecosystem',
+          'efficient_investment',
+        ])
+      )
+      .optional(),
+    assetIds: z.array(z.string()).optional(),
+    ownerId: z.string(),
+    dueDate: z.string(),
+    origin: z.string().optional(),
+    suppressingDomainScore: z.boolean().optional(),
+    remediation: z
+      .object({
+        ownerId: z.string(),
+        targetDate: z.string(),
+        plan: z.string().optional(),
+        revisionCount: z.number().int().optional(),
+        acceptedRiskRationale: z.string().optional(),
+        closedAt: z.string().datetime({ offset: true }).optional(),
+        closureApprovedBy: z.string().optional(),
+      })
+      .passthrough()
+      .optional(),
+  })
+  .passthrough();
+const ResponseMeta = z
+  .object({
+    requestId: z.string().uuid(),
+    correlationId: z.string(),
+    generatedAt: z.string().datetime({ offset: true }),
+  })
+  .partial()
+  .passthrough();
+const ListEnvelopeFinding = z
+  .object({
+    data: z
+      .object({
+        items: z.array(
+          z
+            .object({
+              id: z.string(),
+              title: z.string(),
+              severity: z.enum(['low', 'medium', 'high', 'critical']),
+              state: z.enum(['open', 'overdue', 'closed', 'accepted_risk']),
+              domains: z
+                .array(
+                  z.enum([
+                    'risk_exposure',
+                    'governance_and_leadership',
+                    'strategic_context',
+                    'resilience',
+                    'response_capability',
+                    'extended_ecosystem',
+                    'efficient_investment',
+                  ])
+                )
+                .optional(),
+              assetIds: z.array(z.string()).optional(),
+              ownerId: z.string(),
+              dueDate: z.string(),
+              origin: z.string().optional(),
+              suppressingDomainScore: z.boolean().optional(),
+              remediation: z
+                .object({
+                  ownerId: z.string(),
+                  targetDate: z.string(),
+                  plan: z.string().optional(),
+                  revisionCount: z.number().int().optional(),
+                  acceptedRiskRationale: z.string().optional(),
+                  closedAt: z.string().datetime({ offset: true }).optional(),
+                  closureApprovedBy: z.string().optional(),
+                })
+                .passthrough()
+                .optional(),
+            })
+            .passthrough()
+        ),
+        nextCursor: z.string().optional(),
+      })
+      .passthrough(),
+    meta: z
+      .object({
+        requestId: z.string().uuid(),
+        correlationId: z.string(),
+        generatedAt: z.string().datetime({ offset: true }),
+      })
+      .partial()
+      .passthrough(),
+  })
+  .passthrough();
+const Problem = z
+  .object({
+    type: z.string().url(),
+    title: z.string(),
+    status: z.number().int(),
+    detail: z.string(),
+    instance: z.string().url(),
+    code: z.string(),
+  })
+  .partial()
+  .passthrough();
+const FindingCreate = z
+  .object({
+    title: z.string(),
+    description: z.string().optional(),
+    severity: z.enum(['low', 'medium', 'high', 'critical']),
+    domains: z.array(
+      z.enum([
+        'risk_exposure',
+        'governance_and_leadership',
+        'strategic_context',
+        'resilience',
+        'response_capability',
+        'extended_ecosystem',
+        'efficient_investment',
+      ])
+    ),
+    assetIds: z.array(z.string()).optional(),
+    ownerId: z.string(),
+    dueDate: z.string(),
+    origin: z
+      .enum([
+        'exercise',
+        'incident',
+        'evidence_lapse',
+        'audit',
+        'allocation_divergence',
+        'coverage_gap',
+      ])
+      .optional(),
+  })
+  .passthrough();
+const DataEnvelopeFinding = z
+  .object({
+    data: z
+      .object({
+        id: z.string(),
+        title: z.string(),
+        severity: z.enum(['low', 'medium', 'high', 'critical']),
+        state: z.enum(['open', 'overdue', 'closed', 'accepted_risk']),
+        domains: z
+          .array(
+            z.enum([
+              'risk_exposure',
+              'governance_and_leadership',
+              'strategic_context',
+              'resilience',
+              'response_capability',
+              'extended_ecosystem',
+              'efficient_investment',
+            ])
+          )
+          .optional(),
+        assetIds: z.array(z.string()).optional(),
+        ownerId: z.string(),
+        dueDate: z.string(),
+        origin: z.string().optional(),
+        suppressingDomainScore: z.boolean().optional(),
+        remediation: z
+          .object({
+            ownerId: z.string(),
+            targetDate: z.string(),
+            plan: z.string().optional(),
+            revisionCount: z.number().int().optional(),
+            acceptedRiskRationale: z.string().optional(),
+            closedAt: z.string().datetime({ offset: true }).optional(),
+            closureApprovedBy: z.string().optional(),
+          })
+          .passthrough()
+          .optional(),
+      })
+      .passthrough(),
+    meta: z
+      .object({
+        requestId: z.string().uuid(),
+        correlationId: z.string(),
+        generatedAt: z.string().datetime({ offset: true }),
+      })
+      .partial()
+      .passthrough(),
+  })
+  .passthrough();
+
+export const schemas: any = {
+  raiseFinding_Body,
+  updateRemediationCommitment_Body,
+  DomainKey,
+  RemediationCommitment,
+  Finding,
+  ResponseMeta,
+  ListEnvelopeFinding,
+  Problem,
+  FindingCreate,
+  DataEnvelopeFinding,
+};
+
+const endpoints = makeApi([
+  {
+    method: 'get',
+    path: '/v1/findings',
+    alias: 'listFindings',
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'cursor',
+        type: 'Query',
+        schema: z.string().optional(),
+      },
+      {
+        name: 'limit',
+        type: 'Query',
+        schema: z.number().int().gte(1).lte(200).optional().default(50),
+      },
+      {
+        name: 'state',
+        type: 'Query',
+        schema: z
+          .enum(['open', 'overdue', 'closed', 'accepted_risk'])
+          .optional(),
+      },
+      {
+        name: 'domain',
+        type: 'Query',
+        schema: z
+          .enum([
+            'risk_exposure',
+            'governance_and_leadership',
+            'strategic_context',
+            'resilience',
+            'response_capability',
+            'extended_ecosystem',
+            'efficient_investment',
+          ])
+          .optional(),
+      },
+    ],
+    response: z
+      .object({
+        data: z
+          .object({
+            items: z.array(
+              z
+                .object({
+                  id: z.string(),
+                  title: z.string(),
+                  severity: z.enum(['low', 'medium', 'high', 'critical']),
+                  state: z.enum(['open', 'overdue', 'closed', 'accepted_risk']),
+                  domains: z
+                    .array(
+                      z.enum([
+                        'risk_exposure',
+                        'governance_and_leadership',
+                        'strategic_context',
+                        'resilience',
+                        'response_capability',
+                        'extended_ecosystem',
+                        'efficient_investment',
+                      ])
+                    )
+                    .optional(),
+                  assetIds: z.array(z.string()).optional(),
+                  ownerId: z.string(),
+                  dueDate: z.string(),
+                  origin: z.string().optional(),
+                  suppressingDomainScore: z.boolean().optional(),
+                  remediation: z
+                    .object({
+                      ownerId: z.string(),
+                      targetDate: z.string(),
+                      plan: z.string().optional(),
+                      revisionCount: z.number().int().optional(),
+                      acceptedRiskRationale: z.string().optional(),
+                      closedAt: z
+                        .string()
+                        .datetime({ offset: true })
+                        .optional(),
+                      closureApprovedBy: z.string().optional(),
+                    })
+                    .passthrough()
+                    .optional(),
+                })
+                .passthrough()
+            ),
+            nextCursor: z.string().optional(),
+          })
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough(),
+      })
+      .passthrough(),
+    errors: [
+      {
+        status: 401,
+        description: `Missing or invalid API key`,
+        schema: z
+          .object({
+            type: z.string().url(),
+            title: z.string(),
+            status: z.number().int(),
+            detail: z.string(),
+            instance: z.string().url(),
+            code: z.string(),
+          })
+          .partial()
+          .passthrough(),
+      },
+    ],
+  },
+  {
+    method: 'post',
+    path: '/v1/findings',
+    alias: 'raiseFinding',
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'body',
+        type: 'Body',
+        schema: raiseFinding_Body,
+      },
+    ],
+    response: z
+      .object({
+        data: z
+          .object({
+            id: z.string(),
+            title: z.string(),
+            severity: z.enum(['low', 'medium', 'high', 'critical']),
+            state: z.enum(['open', 'overdue', 'closed', 'accepted_risk']),
+            domains: z
+              .array(
+                z.enum([
+                  'risk_exposure',
+                  'governance_and_leadership',
+                  'strategic_context',
+                  'resilience',
+                  'response_capability',
+                  'extended_ecosystem',
+                  'efficient_investment',
+                ])
+              )
+              .optional(),
+            assetIds: z.array(z.string()).optional(),
+            ownerId: z.string(),
+            dueDate: z.string(),
+            origin: z.string().optional(),
+            suppressingDomainScore: z.boolean().optional(),
+            remediation: z
+              .object({
+                ownerId: z.string(),
+                targetDate: z.string(),
+                plan: z.string().optional(),
+                revisionCount: z.number().int().optional(),
+                acceptedRiskRationale: z.string().optional(),
+                closedAt: z.string().datetime({ offset: true }).optional(),
+                closureApprovedBy: z.string().optional(),
+              })
+              .passthrough()
+              .optional(),
+          })
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough(),
+      })
+      .passthrough(),
+    errors: [
+      {
+        status: 401,
+        description: `Missing or invalid API key`,
+        schema: z
+          .object({
+            type: z.string().url(),
+            title: z.string(),
+            status: z.number().int(),
+            detail: z.string(),
+            instance: z.string().url(),
+            code: z.string(),
+          })
+          .partial()
+          .passthrough(),
+      },
+    ],
+  },
+  {
+    method: 'put',
+    path: '/v1/findings/:findingId/remediation',
+    alias: 'updateRemediationCommitment',
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'body',
+        type: 'Body',
+        schema: updateRemediationCommitment_Body,
+      },
+      {
+        name: 'findingId',
+        type: 'Path',
+        schema: z.string(),
+      },
+    ],
+    response: z
+      .object({
+        data: z
+          .object({
+            id: z.string(),
+            title: z.string(),
+            severity: z.enum(['low', 'medium', 'high', 'critical']),
+            state: z.enum(['open', 'overdue', 'closed', 'accepted_risk']),
+            domains: z
+              .array(
+                z.enum([
+                  'risk_exposure',
+                  'governance_and_leadership',
+                  'strategic_context',
+                  'resilience',
+                  'response_capability',
+                  'extended_ecosystem',
+                  'efficient_investment',
+                ])
+              )
+              .optional(),
+            assetIds: z.array(z.string()).optional(),
+            ownerId: z.string(),
+            dueDate: z.string(),
+            origin: z.string().optional(),
+            suppressingDomainScore: z.boolean().optional(),
+            remediation: z
+              .object({
+                ownerId: z.string(),
+                targetDate: z.string(),
+                plan: z.string().optional(),
+                revisionCount: z.number().int().optional(),
+                acceptedRiskRationale: z.string().optional(),
+                closedAt: z.string().datetime({ offset: true }).optional(),
+                closureApprovedBy: z.string().optional(),
+              })
+              .passthrough()
+              .optional(),
+          })
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough(),
+      })
+      .passthrough(),
+    errors: [
+      {
+        status: 401,
+        description: `Missing or invalid API key`,
+        schema: z
+          .object({
+            type: z.string().url(),
+            title: z.string(),
+            status: z.number().int(),
+            detail: z.string(),
+            instance: z.string().url(),
+            code: z.string(),
+          })
+          .partial()
+          .passthrough(),
+      },
+    ],
+  },
+]);
+
+export const api: any = new Zodios('https://api.vouchstone.local/v1', endpoints);
+
+export function createApiClient(baseUrl: string, options?: ZodiosOptions): any {
+  return new Zodios(baseUrl, endpoints, options);
+}

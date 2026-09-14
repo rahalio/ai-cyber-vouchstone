@@ -1,0 +1,196 @@
+openapi: 3.1.0
+info:
+  title: Governance API schemas
+  version: 0.1.0
+  description: Committee-owned validity rules, weightings, caps, and change log.
+paths: {}
+components:
+  schemas:
+    EvidenceType:
+      type: object
+      required:
+      - key
+      - label
+      properties:
+        key:
+          type: string
+          enum:
+          - asset_attestation
+          - emulation_exercise_report
+          - response_plan_test
+          - recovery_plan_test
+          - detection_coverage_scan
+          - escalation_path_test
+          - third_party_assessment
+          - contractual_clause_review
+          - control_spend_statement
+          - training_completion
+          - incident_postmortem
+        label:
+          type: string
+        defaultValidityDays:
+          type: integer
+    ValidityRule:
+      type: object
+      required:
+      - evidenceTypeKey
+      - validityDays
+      properties:
+        evidenceTypeKey:
+          type: string
+        validityDays:
+          type: integer
+        setBy:
+          type: string
+          description: Committee approver, not the security function
+    Domain:
+      type: object
+      required:
+      - key
+      - name
+      properties:
+        key:
+          $ref: ./common/vouchstone-primitives.yaml#/components/schemas/DomainKey
+        name:
+          type: string
+        description:
+          type: string
+        weighting:
+          type: number
+          format: float
+    GovernanceSetting:
+      type: object
+      properties:
+        validityRules:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidityRule"
+        evidenceTypes:
+          type: array
+          items:
+            $ref: "#/components/schemas/EvidenceType"
+        domains:
+          type: array
+          items:
+            $ref: "#/components/schemas/Domain"
+        capOnOpenCriticalFinding:
+          type: integer
+        capOnStaleAttestation:
+          type: integer
+        ownedBy:
+          type: string
+          enum:
+          - audit_risk_committee
+        lastApproval:
+          $ref: "#/components/schemas/ApprovalRecord"
+      x-dynamodb:
+        entityType: GOVERNANCE
+        pkPatternTemplate: GOVERNANCE#settings
+        skPatternTemplate: METADATA
+        pkPattern: entity
+    GovernanceSettingUpdate:
+      type: object
+      required:
+      - approval
+      properties:
+        validityRules:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidityRule"
+        capOnOpenCriticalFinding:
+          type: integer
+        capOnStaleAttestation:
+          type: integer
+        domainWeightings:
+          type: array
+          items:
+            type: object
+            properties:
+              domain:
+                $ref: ./common/vouchstone-primitives.yaml#/components/schemas/DomainKey
+              weighting:
+                type: number
+                format: float
+        approval:
+          $ref: "#/components/schemas/ApprovalRecord"
+    ApprovalRecord:
+      type: object
+      required:
+      - approvedBy
+      - approvedAt
+      properties:
+        approvedBy:
+          type: string
+        approverRole:
+          type: string
+        approvedAt:
+          type: string
+          format: date-time
+        minuteReference:
+          type: string
+        rationale:
+          type: string
+    AccessLogEntry:
+      type: object
+      required:
+      - at
+      - actor
+      - resourceType
+      properties:
+        at:
+          type: string
+          format: date-time
+        actor:
+          type: string
+        resourceType:
+          type: string
+          enum:
+          - priority_asset
+          - coverage_gap
+          - exercise_finding
+          - assurance_statement
+          - export_package
+        resourceId:
+          type: string
+        compartment:
+          type: string
+        outcome:
+          type: string
+          enum:
+          - allowed
+          - denied
+      x-dynamodb:
+        entityType: ACCESSLOG
+        pkPatternTemplate: ACCESSLOG#${at}
+        skPatternTemplate: METADATA
+        pkPattern: entity
+        createdAtField: at
+    DataEnvelopeGovernanceSetting:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: "#/components/schemas/GovernanceSetting"
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    ListEnvelopeAccessLogEntry:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          type: object
+          required:
+          - items
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/AccessLogEntry"
+            nextCursor:
+              type: string
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta

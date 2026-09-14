@@ -1,0 +1,45 @@
+export * from './_shared/id-generator.service.impl.js';
+export * from './_shared/dynamodb-utils.js';
+export * from './_shared/dynamodb-key-helpers.js';
+export * from './_shared/dynamodb-client-types.js';
+export * from './_shared/http-client.js';
+export * from './_shared/in-memory-api-key-lookup.js';
+export * from './_shared/in-memory-idempotency-store.js';
+export * from './_shared/sandbox-store.js';
+export * from './_shared/messaging/index.js';
+
+import * as _allocation from './allocation/index.js';
+import * as _assets from './assets/index.js';
+import * as _assurance from './assurance/index.js';
+import * as _attribution from './attribution/index.js';
+import * as _coverage from './coverage/index.js';
+import * as _domains from './domains/index.js';
+import * as _evidence from './evidence/index.js';
+import * as _exercises from './exercises/index.js';
+import * as _findings from './findings/index.js';
+import * as _governance from './governance/index.js';
+import * as _identity from './identity/index.js';
+
+export const allocation = _allocation;
+export const assets = _assets;
+export const assurance = _assurance;
+export const attribution = _attribution;
+export const coverage = _coverage;
+export const domains = _domains;
+export const evidence = _evidence;
+export const exercises = _exercises;
+export const findings = _findings;
+export const governance = _governance;
+export const identity = _identity;
+
+export * from './allocation/index.js';
+export * from './assets/index.js';
+export * from './assurance/index.js';
+export * from './attribution/index.js';
+export * from './coverage/index.js';
+export * from './domains/index.js';
+export * from './evidence/index.js';
+export * from './exercises/index.js';
+export * from './findings/index.js';
+export * from './governance/index.js';
+export * from './identity/index.js';
