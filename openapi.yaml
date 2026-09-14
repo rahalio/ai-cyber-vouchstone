@@ -1,0 +1,1964 @@
+openapi: 3.0.3
+info:
+  title: Vouchstone
+  version: 0.1.0
+  description: >-
+    Evidenced cyber assurance. Vouchstone caps every domain posture score by the dated
+    evidence behind it, decays scores when that evidence lapses, records who actually
+    discovered each successful attack, reconciles believed impact against actual control
+    spend, and generates the committee pack, regulatory return, and insurance proposal
+    response from one traceable evidence base.
+  x-product-slug: ai-cyber-vouchstone
+  x-source: ai-in-cyber/Accenture-Security-Report-2016_Key-Insights_SPAIN-esp/
+servers:
+  - url: https://api.example.com
+tags:
+  - name: Assets
+    description: Priority asset register, locations, and owner attestations
+  - name: Evidence
+    description: Typed evidence items, validity clocks, and lapse
+  - name: Domains
+    description: Seven-domain posture scoring under evidence caps
+  - name: Coverage
+    description: Detection coverage and named gaps over priority assets
+  - name: Attribution
+    description: Incident discoverer attribution and measured detection intervals
+  - name: Exercises
+    description: Adversary emulation scheduling, scope, and outcomes
+  - name: Findings
+    description: Findings, remediation ownership, and score suppression
+  - name: Allocation
+    description: Believed impact versus actual control investment reconciliation
+  - name: Assurance
+    description: Assurance statement assembly and single-sourced exports
+  - name: Governance
+    description: Committee-owned validity rules, weightings, caps, and change log
+paths:
+  /v1/assets:
+    get:
+      operationId: listPriorityAssets
+      tags: [Assets]
+      description: >-
+        Compartmented. Callers see only assets within their attestation or role scope.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: attestationState
+          in: query
+          schema:
+            type: string
+            enum: [current, due, stale, never_attested]
+        - name: businessCriticality
+          in: query
+          schema:
+            type: string
+            enum: [low, medium, high, crown_jewel]
+      responses:
+        "200":
+          description: Priority assets page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopePriorityAsset"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: registerPriorityAsset
+      tags: [Assets]
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PriorityAssetCreate"
+      responses:
+        "201":
+          description: Priority asset registered pending owner attestation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopePriorityAsset"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+  /v1/assets/{assetId}/attestation:
+    parameters:
+      - $ref: "#/components/parameters/AssetId"
+    post:
+      operationId: attestPriorityAsset
+      tags: [Assets]
+      description: >-
+        Business owner attests to the asset and its recorded location, restarting the
+        re-attestation clock.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssetAttestationCreate"
+      responses:
+        "201":
+          description: Attestation recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeAssetAttestation"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/evidence:
+    get:
+      operationId: listEvidenceItems
+      tags: [Evidence]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: domain
+          in: query
+          schema:
+            $ref: "#/components/schemas/DomainKey"
+        - name: validity
+          in: query
+          schema:
+            type: string
+            enum: [valid, expiring, expired, superseded]
+      responses:
+        "200":
+          description: Evidence items page with validity state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeEvidenceItem"
+    post:
+      operationId: submitEvidenceItem
+      tags: [Evidence]
+      description: >-
+        Submit typed evidence. The validity period is derived from the committee-owned
+        rule for the evidence type and cannot be set by the submitter.
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvidenceItemCreate"
+      responses:
+        "201":
+          description: Evidence accepted with a derived expiry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeEvidenceItem"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+  /v1/evidence/expiry-forecast:
+    get:
+      operationId: getEvidenceExpiryForecast
+      tags: [Evidence]
+      description: >-
+        Forward view of evidence lapsing in the requested horizon and the score impact
+        of each lapse.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: horizonDays
+          in: query
+          schema:
+            type: integer
+            default: 180
+      responses:
+        "200":
+          description: Expiry forecast with projected score impact
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeEvidenceExpiryForecast"
+  /v1/domains/scores:
+    get:
+      operationId: listDomainScores
+      tags: [Domains]
+      description: >-
+        Scores across risk exposure, governance and leadership, strategic context,
+        resilience, response capability, extended ecosystem, and efficient investment.
+        Each score is ceilinged by valid evidence and open findings.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: asOf
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Domain scores with caps and suppressions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeDomainScore"
+  /v1/domains/{domainKey}/score:
+    parameters:
+      - $ref: "#/components/parameters/DomainKeyPath"
+    get:
+      operationId: getDomainScore
+      tags: [Domains]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Domain score with contributing and lapsed evidence
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeDomainScore"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/domains/{domainKey}/claim:
+    parameters:
+      - $ref: "#/components/parameters/DomainKeyPath"
+    post:
+      operationId: proposeDomainClaim
+      tags: [Domains]
+      description: >-
+        Propose a posture claim for a domain. Rejected when the claim exceeds the
+        evidence cap, including when proposed by the accountable executive.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [claimedScore, narrative]
+              properties:
+                claimedScore:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                narrative:
+                  type: string
+      responses:
+        "201":
+          description: Claim accepted within cap
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeDomainScore"
+        "409":
+          description: Claim exceeds the evidence cap for this domain
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /v1/coverage:
+    get:
+      operationId: listDetectionCoverage
+      tags: [Coverage]
+      description: >-
+        Detection coverage expressed per named priority asset rather than per network or
+        control count.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: assetId
+          in: query
+          schema:
+            type: string
+        - name: hasGap
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Coverage records page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeDetectionCoverage"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/coverage/gaps:
+    get:
+      operationId: listCoverageGaps
+      tags: [Coverage]
+      description: >-
+        Highly restricted. The assembled gap list is a target-selection document for an
+        insider and every read is logged.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Named coverage gaps within the caller's compartment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeCoverageGap"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/incidents/{incidentId}/attribution:
+    parameters:
+      - $ref: "#/components/parameters/IncidentId"
+    post:
+      operationId: attributeIncidentDiscovery
+      tags: [Attribution]
+      description: >-
+        Records who discovered a confirmed successful attack. Captured at intake by the
+        incident process, outside the control of the function whose share it measures.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DiscovererAttributionCreate"
+      responses:
+        "201":
+          description: Attribution recorded and detection interval measured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeDiscovererAttribution"
+        "409":
+          description: Attribution already recorded and is append-only
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /v1/attribution/discovery-share:
+    get:
+      operationId: getDiscoveryShareReport
+      tags: [Attribution]
+      description: >-
+        Standing metric of what share of confirmed successful attacks the security
+        function discovered itself, with the remainder broken out by discoverer class.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            example: 2026
+      responses:
+        "200":
+          description: Discovery share report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeDiscoveryShareReport"
+  /v1/attribution/detection-intervals:
+    get:
+      operationId: getDetectionIntervalDistribution
+      tags: [Attribution]
+      description: >-
+        Measured time to detect as a distribution, never a surveyed estimate or a single
+        average.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Detection interval distribution
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeDetectionIntervalDistribution"
+  /v1/exercises:
+    get:
+      operationId: listEmulationExercises
+      tags: [Exercises]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [scheduled, executed, deferred, missed, expired]
+      responses:
+        "200":
+          description: Exercises page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeEmulationExercise"
+    post:
+      operationId: scheduleEmulationExercise
+      tags: [Exercises]
+      description: >-
+        Schedule an independent adversary emulation with a defined scope over named
+        priority assets. A missed due date expires the associated evidence.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmulationExerciseCreate"
+      responses:
+        "201":
+          description: Exercise scheduled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeEmulationExercise"
+  /v1/exercises/{exerciseId}/outcome:
+    parameters:
+      - $ref: "#/components/parameters/ExerciseId"
+    post:
+      operationId: recordExerciseOutcome
+      tags: [Exercises]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExerciseOutcomeCreate"
+      responses:
+        "201":
+          description: Outcome and findings recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeEmulationExercise"
+  /v1/findings:
+    get:
+      operationId: listFindings
+      tags: [Findings]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: state
+          in: query
+          schema:
+            type: string
+            enum: [open, overdue, closed, accepted_risk]
+        - name: domain
+          in: query
+          schema:
+            $ref: "#/components/schemas/DomainKey"
+      responses:
+        "200":
+          description: Findings page with suppressed domain scores
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeFinding"
+    post:
+      operationId: raiseFinding
+      tags: [Findings]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FindingCreate"
+      responses:
+        "201":
+          description: Finding raised with a named owner and due date
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeFinding"
+  /v1/findings/{findingId}/remediation:
+    parameters:
+      - $ref: "#/components/parameters/FindingId"
+    put:
+      operationId: updateRemediationCommitment
+      tags: [Findings]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemediationCommitment"
+      responses:
+        "200":
+          description: Remediation commitment updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeFinding"
+  /v1/allocation/reconciliation:
+    get:
+      operationId: getAllocationReconciliation
+      tags: [Allocation]
+      description: >-
+        Compares where the organisation believes impact concentrates against where
+        control effort and spend actually go, and raises a standing divergence finding.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Allocation reconciliation with divergences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeAllocationReconciliation"
+  /v1/allocation/impact-beliefs:
+    post:
+      operationId: recordImpactBelief
+      tags: [Allocation]
+      description: >-
+        Captures the organisation's stated belief about which threat classes carry the
+        greatest impact, for reconciliation against actual investment.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImpactBelief"
+      responses:
+        "201":
+          description: Impact belief recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeImpactBelief"
+  /v1/assurance/statements:
+    get:
+      operationId: listAssuranceStatements
+      tags: [Assurance]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Assurance statements page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeAssuranceStatement"
+    post:
+      operationId: signAssuranceStatement
+      tags: [Assurance]
+      description: >-
+        Signs and freezes the statement together with the exact evidence validity state
+        at the moment of publication. Immutable thereafter.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssuranceStatementCreate"
+      responses:
+        "201":
+          description: Statement signed and frozen
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeAssuranceStatement"
+        "409":
+          description: A domain claim in the statement exceeds its evidence cap
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /v1/assurance/statements/{statementId}/exports:
+    parameters:
+      - $ref: "#/components/parameters/StatementId"
+    post:
+      operationId: exportAssurancePackage
+      tags: [Assurance]
+      description: >-
+        Generates the committee pack, regulatory return, or insurance proposal response
+        from the one frozen evidence base, with claim-level traceability.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [audience]
+              properties:
+                audience:
+                  type: string
+                  enum: [audit_risk_committee, sector_regulator, cyber_insurer, internal_audit]
+                recipient:
+                  type: string
+      responses:
+        "201":
+          description: Export package generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeExportPackage"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/governance/settings:
+    get:
+      operationId: getGovernanceSettings
+      tags: [Governance]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Committee-owned validity rules, weightings, and caps
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeGovernanceSetting"
+    put:
+      operationId: updateGovernanceSettings
+      tags: [Governance]
+      description: >-
+        Requires the committee scope. The scored security function cannot alter the
+        mechanism by which it is measured.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GovernanceSettingUpdate"
+      responses:
+        "200":
+          description: Settings updated with an approval record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeGovernanceSetting"
+        "403":
+          description: Caller lacks the committee scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /v1/governance/access-log:
+    get:
+      operationId: listAccessLog
+      tags: [Governance]
+      description: >-
+        Reads of the asset register, coverage gaps, and exercise findings are recorded
+        and reviewable.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Access log page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeAccessLogEntry"
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+    AssetId:
+      name: assetId
+      in: path
+      required: true
+      schema:
+        type: string
+    DomainKeyPath:
+      name: domainKey
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/DomainKey"
+    IncidentId:
+      name: incidentId
+      in: path
+      required: true
+      schema:
+        type: string
+    ExerciseId:
+      name: exerciseId
+      in: path
+      required: true
+      schema:
+        type: string
+    FindingId:
+      name: findingId
+      in: path
+      required: true
+      schema:
+        type: string
+    StatementId:
+      name: statementId
+      in: path
+      required: true
+      schema:
+        type: string
+  responses:
+    Unauthorized:
+      description: Missing or invalid credentials
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    Forbidden:
+      description: Outside the caller's compartment or scope
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    UnprocessableEntity:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  schemas:
+    ResponseMeta:
+      type: object
+      required: [requestId, timestamp]
+      properties:
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    Problem:
+      type: object
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+    Money:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+          example: EUR
+    DomainKey:
+      type: string
+      enum:
+        - risk_exposure
+        - governance_and_leadership
+        - strategic_context
+        - resilience
+        - response_capability
+        - extended_ecosystem
+        - efficient_investment
+    Domain:
+      type: object
+      required: [key, name]
+      properties:
+        key:
+          $ref: "#/components/schemas/DomainKey"
+        name:
+          type: string
+        description:
+          type: string
+        weighting:
+          type: number
+          format: float
+    PriorityAsset:
+      type: object
+      required: [id, name, businessCriticality, ownerId]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        businessCriticality:
+          type: string
+          enum: [low, medium, high, crown_jewel]
+        ownerId:
+          type: string
+        businessUnit:
+          type: string
+        location:
+          type: string
+          description: Recorded location, restricted to the asset owner's compartment
+        adversaryObjective:
+          type: string
+          description: What an adversary is believed to be after on this asset
+        attestationState:
+          type: string
+          enum: [current, due, stale, never_attested]
+        reattestationIntervalDays:
+          type: integer
+        lastAttestedAt:
+          type: string
+          format: date-time
+    PriorityAssetCreate:
+      type: object
+      required: [name, businessCriticality, ownerId]
+      properties:
+        name:
+          type: string
+        businessCriticality:
+          type: string
+          enum: [low, medium, high, crown_jewel]
+        ownerId:
+          type: string
+        businessUnit:
+          type: string
+        location:
+          type: string
+        adversaryObjective:
+          type: string
+        reattestationIntervalDays:
+          type: integer
+    AssetAttestationCreate:
+      type: object
+      required: [locationConfirmed, attestedBy]
+      properties:
+        locationConfirmed:
+          type: boolean
+        attestedBy:
+          type: string
+        locationCorrection:
+          type: string
+        notes:
+          type: string
+    AssetAttestation:
+      type: object
+      required: [id, assetId, attestedBy, attestedAt]
+      properties:
+        id:
+          type: string
+        assetId:
+          type: string
+        attestedBy:
+          type: string
+        attestedAt:
+          type: string
+          format: date-time
+        locationConfirmed:
+          type: boolean
+        expiresAt:
+          type: string
+          format: date-time
+    EvidenceType:
+      type: object
+      required: [key, label]
+      properties:
+        key:
+          type: string
+          enum:
+            - asset_attestation
+            - emulation_exercise_report
+            - response_plan_test
+            - recovery_plan_test
+            - detection_coverage_scan
+            - escalation_path_test
+            - third_party_assessment
+            - contractual_clause_review
+            - control_spend_statement
+            - training_completion
+            - incident_postmortem
+        label:
+          type: string
+        defaultValidityDays:
+          type: integer
+    ValidityRule:
+      type: object
+      required: [evidenceTypeKey, validityDays]
+      properties:
+        evidenceTypeKey:
+          type: string
+        validityDays:
+          type: integer
+        setBy:
+          type: string
+          description: Committee approver, not the security function
+    EvidenceItem:
+      type: object
+      required: [id, typeKey, domains, effectiveDate, validity]
+      properties:
+        id:
+          type: string
+        typeKey:
+          type: string
+        domains:
+          type: array
+          items:
+            $ref: "#/components/schemas/DomainKey"
+        assetIds:
+          type: array
+          items:
+            type: string
+        effectiveDate:
+          type: string
+          format: date
+        expiresAt:
+          type: string
+          format: date-time
+        validity:
+          type: string
+          enum: [valid, expiring, expired, superseded]
+        provenance:
+          type: string
+          enum: [internal, independent_provider, regulator, supplier, auditor]
+        providerName:
+          type: string
+        artefactReference:
+          type: string
+        supersededById:
+          type: string
+    EvidenceItemCreate:
+      type: object
+      required: [typeKey, domains, effectiveDate, provenance]
+      properties:
+        typeKey:
+          type: string
+        domains:
+          type: array
+          items:
+            $ref: "#/components/schemas/DomainKey"
+        assetIds:
+          type: array
+          items:
+            type: string
+        effectiveDate:
+          type: string
+          format: date
+        provenance:
+          type: string
+          enum: [internal, independent_provider, regulator, supplier, auditor]
+        providerName:
+          type: string
+        artefactReference:
+          type: string
+    EvidenceExpiryForecast:
+      type: object
+      properties:
+        horizonDays:
+          type: integer
+        generatedAt:
+          type: string
+          format: date-time
+        lapses:
+          type: array
+          items:
+            type: object
+            properties:
+              evidenceItemId:
+                type: string
+              typeKey:
+                type: string
+              expiresAt:
+                type: string
+                format: date-time
+              affectedDomains:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DomainKey"
+              projectedCapAfterLapse:
+                type: integer
+        projectedOverallScoreChange:
+          type: number
+          format: float
+    ScoreCap:
+      type: object
+      properties:
+        domain:
+          $ref: "#/components/schemas/DomainKey"
+        cap:
+          type: integer
+          minimum: 1
+          maximum: 5
+        reason:
+          type: string
+          enum: [insufficient_evidence, evidence_expired, open_findings, attestation_stale, never_exercised]
+        contributingFindingIds:
+          type: array
+          items:
+            type: string
+    DomainScore:
+      type: object
+      required: [domain, score, cap]
+      properties:
+        domain:
+          $ref: "#/components/schemas/DomainKey"
+        score:
+          type: integer
+          minimum: 1
+          maximum: 5
+        claimedScore:
+          type: integer
+        cap:
+          $ref: "#/components/schemas/ScoreCap"
+        evidenceBackedShare:
+          type: number
+          format: float
+        validEvidenceIds:
+          type: array
+          items:
+            type: string
+        lapsedEvidenceIds:
+          type: array
+          items:
+            type: string
+        narrative:
+          type: string
+        computedAt:
+          type: string
+          format: date-time
+    DetectionCoverage:
+      type: object
+      required: [assetId, coverageState]
+      properties:
+        assetId:
+          type: string
+        coverageState:
+          type: string
+          enum: [covered, partial, uncovered, unknown]
+        monitoredSurfaces:
+          type: array
+          items:
+            type: string
+            enum: [endpoint, network, identity, application, database, cloud_control_plane, privileged_access]
+        insiderActivityMonitored:
+          type: boolean
+        lastVerifiedAt:
+          type: string
+          format: date-time
+        evidenceItemId:
+          type: string
+    CoverageGap:
+      type: object
+      required: [id, assetId, description]
+      properties:
+        id:
+          type: string
+        assetId:
+          type: string
+        description:
+          type: string
+        surface:
+          type: string
+        openedAt:
+          type: string
+          format: date-time
+        findingId:
+          type: string
+        compartment:
+          type: string
+    Incident:
+      type: object
+      required: [id, confirmedAt, severity]
+      properties:
+        id:
+          type: string
+        confirmedAt:
+          type: string
+          format: date-time
+        severity:
+          type: string
+          enum: [low, moderate, major, critical]
+        targeted:
+          type: boolean
+        objectiveAchievedByAttacker:
+          type: boolean
+        affectedAssetIds:
+          type: array
+          items:
+            type: string
+        threatClass:
+          type: string
+          enum: [insider, external_targeted, external_opportunistic, supply_chain, unknown]
+    DiscovererAttributionCreate:
+      type: object
+      required: [discovererClass, discoveredAt, estimatedCompromiseAt]
+      properties:
+        discovererClass:
+          type: string
+          enum: [security_function, other_employee, authority_or_regulator, external_researcher, supplier, customer, unknown]
+        discoveredAt:
+          type: string
+          format: date-time
+        estimatedCompromiseAt:
+          type: string
+          format: date-time
+        detectionSource:
+          type: string
+        recordedBy:
+          type: string
+    DiscovererAttribution:
+      type: object
+      required: [id, incidentId, discovererClass, discoveredAt]
+      properties:
+        id:
+          type: string
+        incidentId:
+          type: string
+        discovererClass:
+          type: string
+          enum: [security_function, other_employee, authority_or_regulator, external_researcher, supplier, customer, unknown]
+        discoveredAt:
+          type: string
+          format: date-time
+        incident:
+          $ref: "#/components/schemas/Incident"
+        detectionInterval:
+          $ref: "#/components/schemas/DetectionInterval"
+        recordedBy:
+          type: string
+        appendOnly:
+          type: boolean
+          default: true
+    DetectionInterval:
+      type: object
+      properties:
+        incidentId:
+          type: string
+        estimatedCompromiseAt:
+          type: string
+          format: date-time
+        discoveredAt:
+          type: string
+          format: date-time
+        days:
+          type: integer
+        band:
+          type: string
+          enum: [hours, days, weeks, months, year_or_more]
+        measured:
+          type: boolean
+          default: true
+    DiscoveryShareReport:
+      type: object
+      properties:
+        period:
+          type: string
+        confirmedSuccessfulAttacks:
+          type: integer
+        securityFunctionDiscoveryShare:
+          type: number
+          format: float
+        byDiscovererClass:
+          type: array
+          items:
+            type: object
+            properties:
+              discovererClass:
+                type: string
+              count:
+                type: integer
+              share:
+                type: number
+                format: float
+        targetedAttacksObserved:
+          type: integer
+        targetedAttacksAchievingObjective:
+          type: integer
+        successfulAttacksPerMonth:
+          type: number
+          format: float
+    DetectionIntervalDistribution:
+      type: object
+      properties:
+        period:
+          type: string
+        sampleSize:
+          type: integer
+        medianDays:
+          type: number
+          format: float
+        ninetiethPercentileDays:
+          type: number
+          format: float
+        byBand:
+          type: array
+          items:
+            type: object
+            properties:
+              band:
+                type: string
+                enum: [hours, days, weeks, months, year_or_more]
+              count:
+                type: integer
+              share:
+                type: number
+                format: float
+        estimatesExcluded:
+          type: boolean
+          default: true
+    EmulationExercise:
+      type: object
+      required: [id, status, dueDate]
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [scheduled, executed, deferred, missed, expired]
+        dueDate:
+          type: string
+          format: date
+        executedAt:
+          type: string
+          format: date-time
+        providerName:
+          type: string
+        providerIndependent:
+          type: boolean
+        scopeAssetIds:
+          type: array
+          items:
+            type: string
+        scenario:
+          type: string
+          enum: [insider_privilege_abuse, determined_external_adversary, supply_chain_entry, ransomware_resilience, data_exfiltration]
+        outcome:
+          type: string
+          enum: [objectives_blocked, partially_blocked, objectives_achieved, inconclusive]
+        detectedByDefenders:
+          type: boolean
+        findingIds:
+          type: array
+          items:
+            type: string
+        evidenceItemId:
+          type: string
+    EmulationExerciseCreate:
+      type: object
+      required: [dueDate, providerName, scopeAssetIds, scenario]
+      properties:
+        dueDate:
+          type: string
+          format: date
+        providerName:
+          type: string
+        providerIndependent:
+          type: boolean
+          default: true
+        scopeAssetIds:
+          type: array
+          items:
+            type: string
+        scenario:
+          type: string
+          enum: [insider_privilege_abuse, determined_external_adversary, supply_chain_entry, ransomware_resilience, data_exfiltration]
+    ExerciseOutcomeCreate:
+      type: object
+      required: [outcome, executedAt]
+      properties:
+        outcome:
+          type: string
+          enum: [objectives_blocked, partially_blocked, objectives_achieved, inconclusive]
+        executedAt:
+          type: string
+          format: date-time
+        detectedByDefenders:
+          type: boolean
+        timeToDetectHours:
+          type: number
+          format: float
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/FindingCreate"
+        reportReference:
+          type: string
+    FindingCreate:
+      type: object
+      required: [title, severity, domains, ownerId, dueDate]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        domains:
+          type: array
+          items:
+            $ref: "#/components/schemas/DomainKey"
+        assetIds:
+          type: array
+          items:
+            type: string
+        ownerId:
+          type: string
+        dueDate:
+          type: string
+          format: date
+        origin:
+          type: string
+          enum: [exercise, incident, evidence_lapse, audit, allocation_divergence, coverage_gap]
+    Finding:
+      type: object
+      required: [id, title, severity, state, ownerId, dueDate]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        state:
+          type: string
+          enum: [open, overdue, closed, accepted_risk]
+        domains:
+          type: array
+          items:
+            $ref: "#/components/schemas/DomainKey"
+        assetIds:
+          type: array
+          items:
+            type: string
+        ownerId:
+          type: string
+        dueDate:
+          type: string
+          format: date
+        origin:
+          type: string
+        suppressingDomainScore:
+          type: boolean
+        remediation:
+          $ref: "#/components/schemas/RemediationCommitment"
+    RemediationCommitment:
+      type: object
+      required: [ownerId, targetDate]
+      properties:
+        ownerId:
+          type: string
+        targetDate:
+          type: string
+          format: date
+        plan:
+          type: string
+        revisionCount:
+          type: integer
+        acceptedRiskRationale:
+          type: string
+        closedAt:
+          type: string
+          format: date-time
+        closureApprovedBy:
+          type: string
+    ControlInvestment:
+      type: object
+      required: [domain, amount, period]
+      properties:
+        domain:
+          $ref: "#/components/schemas/DomainKey"
+        threatClass:
+          type: string
+          enum: [insider, external_targeted, external_opportunistic, supply_chain]
+        amount:
+          $ref: "#/components/schemas/Money"
+        effortFullTimeEquivalents:
+          type: number
+          format: float
+        period:
+          type: string
+        sourceSystem:
+          type: string
+    ImpactBelief:
+      type: object
+      required: [threatClass, believedImpactRank, capturedFrom]
+      properties:
+        threatClass:
+          type: string
+          enum: [insider, external_targeted, external_opportunistic, supply_chain]
+        believedImpactRank:
+          type: integer
+          minimum: 1
+        believedShare:
+          type: number
+          format: float
+        capturedFrom:
+          type: string
+          enum: [executive_survey, risk_register, committee_minute, workshop]
+        capturedAt:
+          type: string
+          format: date-time
+        trustInInternalControls:
+          type: number
+          format: float
+          description: Stated confidence that internal controls would detect this threat class
+    AllocationDivergence:
+      type: object
+      properties:
+        threatClass:
+          type: string
+        believedImpactShare:
+          type: number
+          format: float
+        actualInvestmentShare:
+          type: number
+          format: float
+        divergencePoints:
+          type: number
+          format: float
+        findingId:
+          type: string
+    AllocationReconciliation:
+      type: object
+      properties:
+        period:
+          type: string
+        beliefs:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImpactBelief"
+        investments:
+          type: array
+          items:
+            $ref: "#/components/schemas/ControlInvestment"
+        divergences:
+          type: array
+          items:
+            $ref: "#/components/schemas/AllocationDivergence"
+        standingFindingRaised:
+          type: boolean
+    ThirdPartyAssessment:
+      type: object
+      properties:
+        supplierId:
+          type: string
+        supplierName:
+          type: string
+        assessedAt:
+          type: string
+          format: date-time
+        validUntil:
+          type: string
+          format: date-time
+        crisisCollaborationTested:
+          type: boolean
+        clauses:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContractualClause"
+    ContractualClause:
+      type: object
+      properties:
+        clauseType:
+          type: string
+          enum: [notification_deadline, audit_right, subprocessor_control, recovery_obligation, regulatory_compliance]
+        present:
+          type: boolean
+        reviewedAt:
+          type: string
+          format: date
+    StatementClaim:
+      type: object
+      required: [domain, score]
+      properties:
+        domain:
+          $ref: "#/components/schemas/DomainKey"
+        score:
+          type: integer
+        narrative:
+          type: string
+        supportingEvidenceIds:
+          type: array
+          items:
+            type: string
+        capAtPublication:
+          type: integer
+    AssuranceStatementCreate:
+      type: object
+      required: [period, claims, signedBy]
+      properties:
+        period:
+          type: string
+        claims:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatementClaim"
+        signedBy:
+          type: string
+        signatoryRole:
+          type: string
+    AssuranceStatement:
+      type: object
+      required: [id, period, signedBy, signedAt]
+      properties:
+        id:
+          type: string
+        period:
+          type: string
+        signedBy:
+          type: string
+        signatoryRole:
+          type: string
+        signedAt:
+          type: string
+          format: date-time
+        claims:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatementClaim"
+        overallScore:
+          type: number
+          format: float
+        evidenceBackedShare:
+          type: number
+          format: float
+        discoveryShare:
+          $ref: "#/components/schemas/DiscoveryShareReport"
+        extendedEcosystemAssessments:
+          type: array
+          items:
+            $ref: "#/components/schemas/ThirdPartyAssessment"
+        frozenEvidenceStateHash:
+          type: string
+        immutable:
+          type: boolean
+          default: true
+    ExportPackage:
+      type: object
+      required: [id, statementId, audience, generatedAt]
+      properties:
+        id:
+          type: string
+        statementId:
+          type: string
+        audience:
+          type: string
+          enum: [audit_risk_committee, sector_regulator, cyber_insurer, internal_audit]
+        recipient:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+        generatedBy:
+          type: string
+        manifestHash:
+          type: string
+        claimTraceability:
+          type: array
+          items:
+            type: object
+            properties:
+              claimDomain:
+                $ref: "#/components/schemas/DomainKey"
+              evidenceItemIds:
+                type: array
+                items:
+                  type: string
+    GovernanceSetting:
+      type: object
+      properties:
+        validityRules:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidityRule"
+        evidenceTypes:
+          type: array
+          items:
+            $ref: "#/components/schemas/EvidenceType"
+        domains:
+          type: array
+          items:
+            $ref: "#/components/schemas/Domain"
+        capOnOpenCriticalFinding:
+          type: integer
+        capOnStaleAttestation:
+          type: integer
+        ownedBy:
+          type: string
+          enum: [audit_risk_committee]
+        lastApproval:
+          $ref: "#/components/schemas/ApprovalRecord"
+    GovernanceSettingUpdate:
+      type: object
+      required: [approval]
+      properties:
+        validityRules:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidityRule"
+        capOnOpenCriticalFinding:
+          type: integer
+        capOnStaleAttestation:
+          type: integer
+        domainWeightings:
+          type: array
+          items:
+            type: object
+            properties:
+              domain:
+                $ref: "#/components/schemas/DomainKey"
+              weighting:
+                type: number
+                format: float
+        approval:
+          $ref: "#/components/schemas/ApprovalRecord"
+    ApprovalRecord:
+      type: object
+      required: [approvedBy, approvedAt]
+      properties:
+        approvedBy:
+          type: string
+        approverRole:
+          type: string
+        approvedAt:
+          type: string
+          format: date-time
+        minuteReference:
+          type: string
+        rationale:
+          type: string
+    AccessLogEntry:
+      type: object
+      required: [at, actor, resourceType]
+      properties:
+        at:
+          type: string
+          format: date-time
+        actor:
+          type: string
+        resourceType:
+          type: string
+          enum: [priority_asset, coverage_gap, exercise_finding, assurance_statement, export_package]
+        resourceId:
+          type: string
+        compartment:
+          type: string
+        outcome:
+          type: string
+          enum: [allowed, denied]
+    DataEnvelopePriorityAsset:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/PriorityAsset"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeAssetAttestation:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/AssetAttestation"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeEvidenceItem:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/EvidenceItem"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeEvidenceExpiryForecast:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/EvidenceExpiryForecast"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeDomainScore:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/DomainScore"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeDiscovererAttribution:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/DiscovererAttribution"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeDiscoveryShareReport:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/DiscoveryShareReport"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeDetectionIntervalDistribution:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/DetectionIntervalDistribution"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeEmulationExercise:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/EmulationExercise"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeFinding:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/Finding"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeAllocationReconciliation:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/AllocationReconciliation"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeImpactBelief:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/ImpactBelief"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeAssuranceStatement:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/AssuranceStatement"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeExportPackage:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/ExportPackage"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeGovernanceSetting:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/GovernanceSetting"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopePriorityAsset:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/PriorityAsset"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeEvidenceItem:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/EvidenceItem"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeDomainScore:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/DomainScore"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeDetectionCoverage:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/DetectionCoverage"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeCoverageGap:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/CoverageGap"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeEmulationExercise:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/EmulationExercise"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeFinding:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Finding"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeAssuranceStatement:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/AssuranceStatement"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeAccessLogEntry:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/AccessLogEntry"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
